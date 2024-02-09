@@ -2,26 +2,26 @@ cmake_minimum_required(VERSION 3.26)
 project(BluetoothGlucose)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Must use GNUInstallDirs to install libraries into correct
+# locations on all platforms.
+include(GNUInstallDirs)
 include(FetchContent)
+find_package(Git REQUIRED)
+find_package(SimpleBluez REQUIRED)
+
 FetchContent_Declare(
-        SimpleBluez
-        GIT_REPOSITORY git@github.com:OpenBluetoothToolbox/SimpleBLE.git
-        GIT_TAG v0.6.1
-        GIT_SHALLOW YES
+        rspcorelib
+        GIT_REPOSITORY "git@github.com:rsps/rsp-core-library.git"
+        GIT_TAG "origin/gfx_acc"
+)
+FetchContent_MakeAvailable(rspcorelib)
+
+include_directories(
+        ${CMAKE_BINARY_DIR}/include/
+        ${PROJECT_SOURCE_DIR}/common
+        ${rspcorelib_SOURCE_DIR}/include
 )
 
-# Note that here we manually do what FetchContent_MakeAvailable() would do,
-# except to ensure that the dependency can also get what it needs, we add
-# custom logic between the FetchContent_Populate() and add_subdirectory()
-# calls.
-FetchContent_GetProperties(SimpleBluez)
-if(NOT SimpleBluez_POPULATED)
-    FetchContent_Populate(SimpleBluez)
-    list(APPEND CMAKE_MODULE_PATH "${SimpleBluez_SOURCE_DIR}/cmake/find")
-    add_subdirectory("${simplebluez_SOURCE_DIR}/simplebluez" "${SimpleBluez_BINARY_DIR}")
-endif()
-
-set(SimpleBluez_FOUND 1)
-
-add_executable(BluetoothGlucose main.cpp)
+add_subdirectory(ble-dump)
