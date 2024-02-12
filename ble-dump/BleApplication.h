@@ -28,6 +28,7 @@ public:
 protected:
     SimpleBluez::Bluez mBluez;
     utils::Thread mBluezThread;
+    std::vector<std::shared_ptr<SimpleBluez::Device>> mPeripherals;
 
     void beforeExecute() override;
     void afterExecute() override;
@@ -36,6 +37,11 @@ protected:
     void handleOptions() override;
     void execute() override;
     void bluezThreadExecute();
+
+    std::shared_ptr<SimpleBluez::Adapter> getAdapter();
+    void scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
+    std::shared_ptr<SimpleBluez::Device> getDevice(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
+    void listDevices();
 };
 
 } // rsp

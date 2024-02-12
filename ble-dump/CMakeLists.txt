@@ -3,6 +3,8 @@ set(APP_NAME "ble-dump")
 add_executable(${APP_NAME}
         main.cpp
         BleApplication.cpp
+        UUID.cpp
+        TrustedDevice.cpp
 )
 
 add_dependencies(${APP_NAME} rsp-core-lib)
