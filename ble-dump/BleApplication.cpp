@@ -115,6 +115,8 @@ void BleApplication::execute()
         td.PrintInfo();
         auto recs = td.GetRecords();
 
+        Console::Info() << "Records received: " << recs.size() << std::endl;
+
         Utils::Delay(1000);
     }
     Terminate(cResultSuccess);

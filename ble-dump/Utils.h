@@ -16,10 +16,13 @@ namespace rsp {
 class Utils
 {
 public:
-    static void Delay(int aMilliseconds)
+    static void Delay(int aMilliseconds, const bool volatile *apAbort = nullptr)
     {
         for (int i = 0; i < aMilliseconds; i++) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            if (apAbort && *apAbort) {
+                break;
+            }
         }
     }
 };

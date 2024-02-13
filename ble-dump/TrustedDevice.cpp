@@ -66,7 +66,9 @@ void TrustedDevice::PrintInfo()
 
 std::vector<GlucoseRecord> TrustedDevice::GetRecords()
 {
-    std::vector<GlucoseRecord> result;
+    Console::Info() << "Preparing to get records." << std::endl;
+    Utils::Delay(2000);
+
     std::string root_uuid;
     for (auto &service : mpDevice->services()) {
         auto uuid = UUID(UUID::Types::Service, service->uuid(), service->path());
@@ -77,39 +79,70 @@ std::vector<GlucoseRecord> TrustedDevice::GetRecords()
     }
     auto service = mpDevice->get_service(ToString(UUID::Identifiers::GlucoseService) + root_uuid);
 
+    Console::Info() << "Using glucose service: " << service->uuid() << std::endl;
+
+    std::vector<GlucoseRecord> result;
     auto gm = service->get_characteristic(ToString(UUID::Identifiers::GlucoseMeasurement) + root_uuid);
-    gm->set_on_value_changed([&](const SimpleBluez::ByteArray &new_value) {
-        debug("Measurement: ", new_value);
-        result.emplace_back();
+    Console::Info() << "Listening on glucose measurement: " << gm->uuid() << std::endl;
+    gm->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+        debug("Measurement: ", arValue);
+        decodeMeasurement(result.emplace_back(), arValue);
     });
     gm->start_notify();
 
     auto gmc = service->get_characteristic(ToString(UUID::Identifiers::GlucoseMeasurementContext) + root_uuid);
-    gmc->set_on_value_changed([&](const SimpleBluez::ByteArray &new_value) {
-        debug("Context: ", new_value);
+    Console::Info() << "Listening on glucose measurement context: " << gmc->uuid() << std::endl;
+    gmc->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+        debug("Context: ", arValue);
     });
     gmc->start_notify();
 
+    uint16_t record_count = 0;
+    bool all_done = false;
     auto gmr = service->get_characteristic(ToString(UUID::Identifiers::RecordAccessControlPoint) + root_uuid);
-    gmr->set_on_value_changed([&](const SimpleBluez::ByteArray &new_value) {
-        debug("Record: ", new_value);
+    Console::Info() << "Listening on record access control point: " << gmr->uuid() << std::endl;
+    gmr->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+        debug("Record: ", arValue);
+        if ((arValue[0] == '\5') && (arValue.size() >= 4)) {
+            auto value = uint16_t(arValue[3]) << 8;
+            value += uint16_t(arValue[2]);
+            record_count = value;
+        }
+        else if ((arValue.size() == 4) && (arValue == "\x06\x00\x01\x01")) {
+            all_done = true;
+        }
     });
-    gmc->start_notify();
-    gmc->write_request("write 0x01 0x01");
+    gmr->start_notify();
 
-    Utils::Delay(20000);
+    Console::Info() << "Requesting record count" << std::endl;
+    gmr->write_command("\x04\x01");
+    Utils::Delay(1000);
+
+    Console::Info() << "Requesting all records" << std::endl;
+    gmr->write_command("\x01\x01");
+
+    Utils::Delay(20000, &all_done);
+
+    gmr->stop_notify();
+    gmc->stop_notify();
+    gm->stop_notify();
 
     return result;
 }
 
-void TrustedDevice::debug(const std::string &arTitle, const SimpleBluez::ByteArray &new_value)
+void TrustedDevice::debug(const std::string &arTitle, const SimpleBluez::ByteArray &arValue)
 {
-    auto o = Console::Debug();
+    auto o = Console::Info();
     o << arTitle << ": ";
-    for (auto &byte : new_value) {
+    for (auto &byte : arValue) {
         o << std::setfill ('0') << std::setw(2) << std::hex << uint32_t(uint8_t(byte)) << " ";
     }
     o << std::endl;
+}
+
+void TrustedDevice::decodeMeasurement(GlucoseRecord &arRecord, const SimpleBluez::ByteArray &arValue)
+{
+
 }
 
 } // rsp
