@@ -38,6 +38,12 @@ public:
     explicit EDeviceNotPaired() : ETerminate(-5) {}
 };
 
+class EGlucoseArgument : public exceptions::ETerminate
+{
+public:
+    explicit EGlucoseArgument() : ETerminate(-6) {}
+};
+
 
 } // namespace rsp
 

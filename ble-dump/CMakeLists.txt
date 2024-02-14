@@ -5,6 +5,8 @@ add_executable(${APP_NAME}
         BleApplication.cpp
         UUID.cpp
         TrustedDevice.cpp
+        GlucoseServiceProfile.cpp
+        AttributeStream.cpp
 )
 
 add_dependencies(${APP_NAME} rsp-core-lib)
@@ -24,4 +26,3 @@ target_link_libraries(${APP_NAME}
 #endif()
 
 install(TARGETS ${APP_NAME} DESTINATION )
-

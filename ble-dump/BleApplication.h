@@ -17,6 +17,13 @@
 
 namespace rsp {
 
+/**
+ * \brief Bluetooth Low Energy application to retrieve glucose data from BGM.
+ *
+ * \see GATT Specification Supplement (https://www.bluetooth.com/specifications/specs/gatt-specification-supplement-5/)
+ * \see Glucose Service (https://www.bluetooth.com/specifications/gls-1-0-1/)
+ * \see Glucose Profile (https://www.bluetooth.com/specifications/glp-1-0-1/)
+ */
 class BleApplication: public rsp::application::ApplicationBase
 {
 public:
