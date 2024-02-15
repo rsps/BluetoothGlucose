@@ -11,17 +11,24 @@
 #define GLUCOSE_SERVICE_PROFILE_H
 
 #include "simplebluez/Bluez.h"
-#include <logging/LogChannel.h>
 #include <utils/DateTime.h>
 #include <vector>
 #include <memory>
+#include "UUID.h"
+#include "BleServiceBase.h"
+#include "AttributeStream.h"
 
 namespace rsp {
 
-
-class GlucoseServiceProfile : public rsp::logging::NamedLogger<GlucoseServiceProfile>
+class GlucoseServiceProfile : public BleService<GlucoseServiceProfile>
 {
 public:
+    enum Flags {
+        TimeOffsetPresent           = 0x01,
+        GlucoseConcentrationPresent = 0x02,
+        GlucoseInMMol               = 0x04,
+        SensorStatusPresent         = 0x08
+    };
     enum class Units {
         mg_dL,
         mmol_L
@@ -32,11 +39,17 @@ public:
         CapillaryPlasma,
         VenousWholeBlood,
         VenousPlasma,
+        ArterialWholeBlood,
         ArterialPlasma,
         UndeterminedWholeBlood,
         UndeterminedPlasma,
         InterstitialFluid,
-        ControlSolution
+        ControlSolution,
+        ReservedForFutureUse1 = 0x0B,
+        ReservedForFutureUse2 = 0x0C,
+        ReservedForFutureUse3 = 0x0D,
+        ReservedForFutureUse4 = 0x0E,
+        ReservedForFutureUse5 = 0x0F
     };
     enum class Location {
         Reserved,
@@ -54,7 +67,13 @@ public:
         StripInsertionError     = 0x0008,
         StripTypeIncorrect      = 0x0010,
         SensorResultToHigh      = 0x0020,
-
+        SensorResultToLow       = 0x0040,
+        SensorTemperatureToHigh = 0x0080,
+        SensorTemperatureToLow  = 0x0100,
+        SensorReadInterrupted   = 0x0200,
+        GeneralDeviceFault      = 0x0400,
+        TimeFault               = 0x0800,
+        Reserved                = 0xF000
     };
 
     struct GlucoseMeasurement {
@@ -65,6 +84,7 @@ public:
         Type mType = Type::Reserved;
         Location mLocation = Location::Reserved;
         SensorStatus mSensorStatus = SensorStatus::None;
+        bool mHasContext = false;
 
         GlucoseMeasurement() = default;
         /**
@@ -72,11 +92,13 @@ public:
          * \param arValue Byte array with data
          * \Reference Section 3.107 in GATT Specification Supplement (https://www.bluetooth.com/specifications/specs/gatt-specification-supplement-5/)
          */
-        explicit GlucoseMeasurement(const SimpleBluez::ByteArray &arValue);
+        explicit GlucoseMeasurement(AttributeStream &s);
     };
 
-    explicit GlucoseServiceProfile(std::shared_ptr<SimpleBluez::Device> apDevice);
+    explicit GlucoseServiceProfile(std::shared_ptr<SimpleBluez::Device> apDevice, UUID &arService);
+    ~GlucoseServiceProfile() override;
 
+    size_t GetMeasurementsCount();
     GlucoseServiceProfile& ReadAllMeasurements();
     GlucoseServiceProfile& ClearAllMeasurements();
 
@@ -84,8 +106,22 @@ public:
 
 protected:
     std::shared_ptr<SimpleBluez::Device> mpDevice;
+    UUID &mrService;
+    std::shared_ptr<SimpleBluez::Characteristic> mRacp;
+    std::shared_ptr<SimpleBluez::Characteristic> mGlucoseMeasurement;
+    std::shared_ptr<SimpleBluez::Characteristic> mGlucoseMeasurementContext;
     std::vector<GlucoseMeasurement> mMeasurements{};
+    std::uint16_t mRecordCount = 0;
+    bool mCommandDone = false;
+
+    void sendCommand(std::uint16_t aCommand, int aTimeoutMs);
+    void racpHandler(AttributeStream aStream);
+    void measurementHandler(AttributeStream aStream);
+    void measurementContextHandler(AttributeStream aStream);
 };
+
+std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM);
+std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList);
 
 } // namespace rsp
 

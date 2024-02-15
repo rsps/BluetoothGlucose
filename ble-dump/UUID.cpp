@@ -28,10 +28,11 @@ std::string ToString(UUID::Identifiers aIdentifier)
     return stream.str();
 }
 
-UUID::UUID(Types aType, std::string aUUID, std::string aPath)
+UUID::UUID(Types aType, std::string aUUID, std::string aPath, UUID* apParent)
     : mType(aType),
       mUUID(std::move(aUUID)),
-      mPath(std::move(aPath))
+      mPath(std::move(aPath)),
+      mpParent(apParent)
 {
     mId = FromString(mUUID);
     mName = toName(mId);
@@ -69,6 +70,15 @@ std::string UUID::toName(UUID::Identifiers aId)
         }
     }
     return "Vendor specific";
+}
+
+UUID& UUID::GetService()
+{
+    UUID* result = this;
+    while (result->mType != Types::Service) {
+        result = result->mpParent;
+    }
+    return *result;
 }
 
 std::ostream& operator<<(std::ostream &o, const UUID &arUuid)

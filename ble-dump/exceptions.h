@@ -14,36 +14,41 @@
 
 namespace rsp {
 
-class ENoAdapter : public exceptions::ETerminate
+class ENoAdapter : public exceptions::ApplicationException
 {
 public:
-    explicit ENoAdapter() : ETerminate(-2) {}
+    explicit ENoAdapter() : ApplicationException("Missing adapter option.") {}
 };
 
-class ENoDevice : public exceptions::ETerminate
+class ENoDevice : public exceptions::ApplicationException
 {
 public:
-    explicit ENoDevice() : ETerminate(-3) {}
+    explicit ENoDevice() : ApplicationException("Missing device option.") {}
 };
 
-class EDeviceNotFound : public exceptions::ETerminate
+class EDeviceNotFound : public exceptions::ApplicationException
 {
 public:
-    explicit EDeviceNotFound() : ETerminate(-4) {}
+    explicit EDeviceNotFound() : ApplicationException("No devices found.") {}
 };
 
-class EDeviceNotPaired : public exceptions::ETerminate
+class EDeviceNotPaired : public exceptions::ApplicationException
 {
 public:
-    explicit EDeviceNotPaired() : ETerminate(-5) {}
+    explicit EDeviceNotPaired() : ApplicationException("Could not pair with device.") {}
 };
 
-class EGlucoseArgument : public exceptions::ETerminate
+class EGlucoseArgument : public exceptions::ApplicationException
 {
 public:
-    explicit EGlucoseArgument() : ETerminate(-6) {}
+    explicit EGlucoseArgument() : ApplicationException("Invalid glucose measurement received") {}
 };
 
+class EServiceNotFound : public exceptions::ApplicationException
+{
+public:
+    explicit EServiceNotFound(const std::string &arServiceName) : ApplicationException("Service not found: " + arServiceName) {}
+};
 
 } // namespace rsp
 

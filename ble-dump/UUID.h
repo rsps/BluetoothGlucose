@@ -51,18 +51,22 @@ public:
         Descriptor
     };
 
-    UUID(Types aType, std::string aUUID, std::string aPath);
+    UUID(Types aType, std::string aUUID, std::string aPath, UUID* apParent = nullptr);
 
     [[nodiscard]] const std::string& GetUUID() const { return mUUID; }
     [[nodiscard]] const std::string& GetPath() const { return mPath; }
     [[nodiscard]] const std::string& GetName() const { return mName; }
     [[nodiscard]] Identifiers GetId() const { return mId; }
     [[nodiscard]] Types GetType() const { return mType; }
+    [[nodiscard]] UUID& GetService();
+
+    [[nodiscard]] bool operator==(Identifiers aId) const { return mId == aId; }
 
 protected:
     std::string mUUID;
     std::string mName;
     std::string mPath;
+    UUID *mpParent;
     Identifiers mId = Identifiers::None;
     Types mType;
 

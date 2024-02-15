@@ -36,6 +36,8 @@ protected:
     SimpleBluez::Bluez mBluez;
     utils::Thread mBluezThread;
     std::vector<std::shared_ptr<SimpleBluez::Device>> mPeripherals;
+    std::string mDeviceMAC{};
+    bool mVerbose = false;
 
     void beforeExecute() override;
     void afterExecute() override;
@@ -46,9 +48,8 @@ protected:
     void bluezThreadExecute();
 
     std::shared_ptr<SimpleBluez::Adapter> getAdapter();
-    void scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
+    void scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool aVerbose);
     std::shared_ptr<SimpleBluez::Device> getDevice(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
-    void listDevices();
 };
 
 } // rsp

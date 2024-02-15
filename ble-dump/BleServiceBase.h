@@ -7,13 +7,16 @@
 * \license     Mozilla Public License 2.0
 * \author      steffen
 */
-#ifndef BLUETOOTHGLUCOSE_BLE_DUMP_DELAY_H
-#define BLUETOOTHGLUCOSE_BLE_DUMP_DELAY_H
+#ifndef BLUETOOTHGLUCOSE_BLESERVICEBASE_H
+#define BLUETOOTHGLUCOSE_BLESERVICEBASE_H
 
+#include <chrono>
 #include <thread>
+#include <logging/LogChannel.h>
+
 namespace rsp {
 
-class Utils
+class BleServiceBase
 {
 public:
     static void Delay(int aMilliseconds, const bool volatile *apAbort = nullptr)
@@ -27,6 +30,12 @@ public:
     }
 };
 
+template<class T>
+class BleService : public BleServiceBase, public rsp::logging::NamedLogger<T>
+{
+};
+
+
 } // namespace rsp
 
-#endif //BLUETOOTHGLUCOSE_BLE_DUMP_DELAY_H
+#endif //BLUETOOTHGLUCOSE_BLESERVICEBASE_H

@@ -90,6 +90,12 @@ float AttributeStream::MedFloat16()
     }
     int exp = int(value & 0xF000) >> 12;
     int mantissa = int(value & 0x0FFF);
+    if (exp >= 0x0008) {
+        exp = -((0x000F + 1) - exp);
+    }
+    if (mantissa >= 0x0800) {
+        mantissa = -((0x0FFF + 1) - mantissa);
+    }
     return makeFloat(exp, mantissa);
 }
 
@@ -110,6 +116,12 @@ float AttributeStream::MedFloat32()
     }
     int exp = int(value & 0xFF000000) >> 24;
     int mantissa = int(value & 0x00FFFFFF);
+    if (exp >= 0x80) {
+        exp = -((0xFF + 1) - exp);
+    }
+    if (mantissa >= 0x00800000) {
+        mantissa = -((0x00FFFFFF + 1) - mantissa);
+    }
     return makeFloat(exp, mantissa);
 }
 
@@ -123,6 +135,37 @@ void AttributeStream::splitFloat(float aValue, int &arExponent, int &arMantissa)
 {
     uint32_t ui = reinterpret_cast<uint32_t&>(aValue);
     // TODO: std::frexp() std::ldexp()
+}
+
+AttributeStream &AttributeStream::DateTime(const utils::DateTime &arDt)
+{
+    std::tm tm = arDt;
+    Uint16(tm.tm_year);
+    Uint8(tm.tm_mon);
+    Uint8(tm.tm_mday);
+    Uint8(tm.tm_hour);
+    Uint8(tm.tm_min);
+    Uint8(tm.tm_sec);
+    return *this;
+}
+
+rsp::utils::DateTime AttributeStream::DateTime()
+{
+    auto y = Uint16();
+    auto m = Uint8();
+    auto d = Uint8();
+    auto h = Uint8();
+    auto i = Uint8();
+    auto s = Uint8();
+    return {y, m,d, h, i, s};
+}
+
+std::ostream& operator<<(std::ostream &o, const AttributeStream &arBA)
+{
+    for (auto &byte: arBA.GetArray()) {
+        o << std::setfill('0') << std::setw(2) << std::hex << uint32_t(uint8_t(byte)) << " ";
+    }
+    return o;
 }
 
 } // rsp

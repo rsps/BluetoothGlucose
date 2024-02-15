@@ -15,8 +15,8 @@
 #include <simplebluez/Exceptions.h>
 #include "exceptions.h"
 #include "TrustedDevice.h"
-#include "Utils.h"
 #include <utils/StrUtils.h>
+#include "BleServiceBase.h"
 
 using namespace rsp::application;
 using namespace rsp::exceptions;
@@ -29,11 +29,8 @@ BleApplication::BleApplication(int argc, const char **argv)
       mBluezThread("Bluez")
 {
     SignalHandler::Register(Signals::Terminate, [this]() { Terminate(0); });
-
     mBluez.init();
-
     mBluezThread.SetExecute(Method(this, &BleApplication::bluezThreadExecute));
-
 }
 
 BleApplication::~BleApplication()
@@ -49,6 +46,18 @@ void BleApplication::beforeExecute()
     if (mCmd.GetCommands().empty()) {
         showHelp();
         THROW_WITH_BACKTRACE1(ETerminate, cResultSuccess);
+    }
+
+    if (mCmd.GetOptionValue("--device", mDeviceMAC)) {
+        std::string_view removals("= ");
+        while (removals.find(mDeviceMAC[0]) != std::string_view::npos) {
+            mDeviceMAC.erase(mDeviceMAC.begin()); // remove first character
+        }
+        StrUtils::ToUpper(mDeviceMAC);
+    }
+
+    if (mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv")) {
+        mVerbose = true;
     }
 }
 
@@ -75,8 +84,10 @@ void BleApplication::showHelp()
        "\n"
        "Commands:\n"
        "    devices                         List found BlueTooth devices\n"
-       "    dump                            Dump records from device\n"
-    << std::endl;
+       "    dump                            Dump records from the device in CSV format\n"
+       "    attributes                      List attributes for the device\n"
+       "    info                            Show general device information\n"
+       << std::endl;
 
     auto adapters = mBluez.get_adapters();
     if (adapters.empty()) {
@@ -88,6 +99,7 @@ void BleApplication::showHelp()
             Console::Info() << "[" << i << "] " << adapters[i]->identifier() << " [" << adapters[i]->address() << "]" << std::endl;
         }
     }
+    Console::Info() << std::endl;
 }
 
 void BleApplication::showVersion()
@@ -104,20 +116,28 @@ void BleApplication::execute()
 {
     mBluezThread.Start();
     auto adapter = getAdapter();
-    scan(adapter);
-
-    if (mCmd.GetCommands()[0] == "devices") {
-        listDevices();
+    auto cmd = mCmd.GetCommands()[0];
+    if (cmd == "devices") {
+        scan(adapter, true);
     }
-    else if (mCmd.GetCommands()[0] == "dump") {
+    else if (cmd == "dump") {
         auto device = getDevice(adapter);
         TrustedDevice td(device);
-        td.PrintInfo();
-        auto recs = td.GetRecords();
-
-        Console::Info() << "Records received: " << recs.size() << std::endl;
-
-        Utils::Delay(1000);
+        auto gls = td.GetGlucoseService();
+        gls.ReadAllMeasurements();
+        auto &recs = gls.GetMeasurements();
+        std::cout << recs << std::endl;
+    }
+    else if (cmd == "attributes") {
+        auto device = getDevice(adapter);
+        TrustedDevice td(device);
+        td.PrintServices();
+    }
+    else if (cmd == "info") {
+        auto device = getDevice(adapter);
+        TrustedDevice td(device);
+//        auto dis =td.GetDeviceInformationService();
+//        dis.PrintInfo();
     }
     Terminate(cResultSuccess);
 }
@@ -150,64 +170,58 @@ std::shared_ptr<SimpleBluez::Adapter> BleApplication::getAdapter()
     THROW_WITH_BACKTRACE(ENoAdapter);
 }
 
-void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter)
+void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool aVerbose)
 {
-    Console::Info() << "Scanning for Bluetooth devices...";
-    bool found_contour = false;
+    if (aVerbose) {
+        Console::Info() << "Scanning for Bluetooth devices...";
+    }
+    bool found_device = false;
     SimpleBluez::Adapter::DiscoveryFilter filter;
     filter.Transport = SimpleBluez::Adapter::DiscoveryFilter::TransportType::LE;
     arAdapter->discovery_filter(filter);
 
     arAdapter->set_on_device_updated([&](const std::shared_ptr<SimpleBluez::Device> &arDevice) {
         if (std::find(mPeripherals.begin(), mPeripherals.end(), arDevice) == mPeripherals.end()) {
-            Console::Info() << "\nFound: " << arDevice->name() << "[" << arDevice->address() << "]" << std::endl;
-            if (StrUtils::Contains(arDevice->name(), "Contour")) {
-                found_contour = true;
-            }
             mPeripherals.push_back(arDevice);
+            if (aVerbose) {
+                Console::Info() << "\nFound: " << arDevice->name() << " [" << arDevice->address() << "]";
+            }
+            if (!mDeviceMAC.empty() && (arDevice->address() == mDeviceMAC)) {
+                found_device = true;
+            }
         }
     });
 
     arAdapter->discovery_start();
     for (int i = 0 ; i < 60 ; ++i) {
-        Utils::Delay(1000);
-        Console::Info() << ".";
-        if (found_contour) {
+        BleServiceBase::Delay(500);
+        if (aVerbose && mPeripherals.empty()) {
+            Console::Info() << ".";
+        }
+        if (found_device) {
             break;
         }
     }
-    Console::Info() << std::endl;
+    if (aVerbose) {
+        Console::Info() << std::endl;
+    }
     arAdapter->discovery_stop();
 }
 
 std::shared_ptr<SimpleBluez::Device> BleApplication::getDevice(std::shared_ptr<SimpleBluez::Adapter> &arAdapter)
 {
-    std::string option_value;
-    if (mCmd.GetOptionValue("--device", option_value)) {
-        option_value.erase(option_value.begin()); // remove '='
-        auto f = [&](const std::shared_ptr<SimpleBluez::Device>& arDevice) {
-            return ((arDevice->address() == option_value) || (arDevice->name() == option_value));
-        };
-        auto it = std::find_if(mPeripherals.begin(), mPeripherals.end(), f);
-        if (it != mPeripherals.end()) {
-            return *it;
-        }
-        THROW_WITH_BACKTRACE(EDeviceNotFound);
+    if (mDeviceMAC.empty()) {
+        THROW_WITH_BACKTRACE(ENoDevice);
     }
-    THROW_WITH_BACKTRACE(ENoDevice);
-}
-
-void BleApplication::listDevices()
-{
-    if (mPeripherals.empty()) {
-        Console::Info() << "No Bluetooth devices found." << std::endl;
+    scan(arAdapter, mVerbose);
+    auto f = [&](const std::shared_ptr<SimpleBluez::Device>& arDevice) {
+        return (arDevice->address() == mDeviceMAC);
+    };
+    auto it = std::find_if(mPeripherals.begin(), mPeripherals.end(), f);
+    if (it != mPeripherals.end()) {
+        return *it;
     }
-    else {
-        Console::Info() << "The following devices were found:" << std::endl;
-        for (size_t i = 0; i < mPeripherals.size(); i++) {
-            Console::Info() << "[" << i << "] " << mPeripherals[i]->name() << " [" << mPeripherals[i]->address() << "]" << std::endl;
-        }
-    }
+    THROW_WITH_BACKTRACE(EDeviceNotFound);
 }
 
 } // rsp

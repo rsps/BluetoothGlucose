@@ -11,6 +11,9 @@
 #define BLUETOOTHGLUCOSE_BLE_DUMP_TRUSTEDDEVICE_H
 
 #include "simplebluez/Bluez.h"
+#include <vector>
+#include "UUID.h"
+#include "GlucoseServiceProfile.h"
 
 namespace rsp {
 
@@ -20,15 +23,17 @@ public:
     explicit TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice);
     ~TrustedDevice();
 
-    void PrintInfo();
-    std::vector<GlucoseRecord> GetRecords();
+    void PrintServices();
+
+    [[nodiscard]] bool HasGlucoseService();
+    GlucoseServiceProfile GetGlucoseService();
 
 protected:
     std::shared_ptr<SimpleBluez::Device> mpDevice;
+    std::vector<UUID> mServiceList{};
 
-    static void debug(const std::string &arTitle, const SimpleBluez::ByteArray &arValue);
-    static void decodeMeasurement(GlucoseRecord &arRecord, const SimpleBluez::ByteArray &arValue);
-
+    void makeServiceList();
+    UUID& findServiceById(UUID::Identifiers aId);
 };
 
 } // rsp
