@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(FetchContent)
 find_package(Git REQUIRED)
-find_package(SimpleBLE REQUIRED)
+find_package(simpleble REQUIRED)
 
 FetchContent_Declare(
         rspcorelib
@@ -18,10 +18,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(rspcorelib)
 
+MESSAGE("SimpleBluez: ${simplebluez_inc}")
+
 include_directories(
         ${CMAKE_BINARY_DIR}/include/
         ${PROJECT_SOURCE_DIR}/common
         ${rspcorelib_SOURCE_DIR}/include
+        ${simplebluez_inc}
 )
 
 add_subdirectory(ble-dump)

@@ -14,6 +14,12 @@
 
 namespace rsp {
 
+class ENoBlueTooth : public exceptions::ETerminate
+{
+public:
+    explicit ENoBlueTooth() : ETerminate(-2) {}
+};
+
 class ENoAdapter : public exceptions::ApplicationException
 {
 public:
@@ -48,6 +54,12 @@ class EServiceNotFound : public exceptions::ApplicationException
 {
 public:
     explicit EServiceNotFound(const std::string &arServiceName) : ApplicationException("Service not found: " + arServiceName) {}
+};
+
+class ECharacteristicNotFound : public exceptions::ApplicationException
+{
+public:
+    explicit ECharacteristicNotFound(const std::string &arUuid) : ApplicationException("Characteristic not found: " + arUuid) {}
 };
 
 } // namespace rsp

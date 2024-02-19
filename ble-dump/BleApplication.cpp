@@ -12,11 +12,12 @@
 #include <application/Console.h>
 #include <exceptions/SignalHandler.h>
 #include <utils/Function.h>
-#include <simplebluez/Exceptions.h>
 #include "exceptions.h"
 #include "TrustedDevice.h"
+#include "GlucoseServiceProfile.h"
 #include <utils/StrUtils.h>
 #include "BleServiceBase.h"
+#include <simplebluez/Bluez.h>
 
 using namespace rsp::exceptions;
 using namespace rsp::utils;
@@ -24,17 +25,13 @@ using namespace rsp::utils;
 namespace rsp {
 
 BleApplication::BleApplication(int argc, const char **argv)
-    : ApplicationBase(argc, argv, "ble-dump"),
-      mBluezThread("Bluez")
+    : ApplicationBase(argc, argv, "ble-dump")
 {
     SignalHandler::Register(Signals::Terminate, [this]() { Terminate(0); });
-    mBluez.init();
-    mBluezThread.SetExecute(Method(this, &BleApplication::bluezThreadExecute));
 }
 
 BleApplication::~BleApplication()
 {
-    mBluezThread.Stop();
     SignalHandler::Unregister(Signals::Terminate);
 }
 
@@ -43,8 +40,8 @@ void BleApplication::beforeExecute()
     ApplicationBase::beforeExecute();
 
     if (!SimpleBLE::Adapter::bluetooth_enabled()) {
-        std::cout << "Bluetooth is not enabled" << std::endl;
-        return 1;
+        mLogger.Error() << "Bluetooth is not enabled";
+        THROW_WITH_BACKTRACE(ENoBlueTooth);
     }
 
     if (mCmd.GetCommands().empty()) {
@@ -90,14 +87,14 @@ void BleApplication::showHelp()
        "    info                            Show general device information\n"
        << std::endl;
 
-    auto adapters = mBluez.get_adapters();
+    auto adapters = SimpleBLE::Adapter::get_adapters();
     if (adapters.empty()) {
         Console::Info() << "No Bluetooth adapters found." << std::endl;
     }
     else {
         Console::Info() << "The following adapters were found:" << std::endl;
         for (int i = 0; i < adapters.size(); i++) {
-            Console::Info() << "[" << i << "] " << adapters[i]->identifier() << " [" << adapters[i]->address() << "]" << std::endl;
+            Console::Info() << "[" << i << "] " << adapters[i].identifier() << " [" << adapters[i].address() << "]" << std::endl;
         }
     }
     Console::Info() << std::endl;
@@ -105,7 +102,10 @@ void BleApplication::showHelp()
 
 void BleApplication::showVersion()
 {
+    using namespace rsp::application;
+    Console::Info() << "Version 0.0.1";
     ApplicationBase::showVersion();
+    Console::Info() << "SimpleBLE version: " << SimpleBLE::get_simpleble_version();;
 }
 
 void BleApplication::handleOptions()
@@ -115,7 +115,6 @@ void BleApplication::handleOptions()
 
 void BleApplication::execute()
 {
-    mBluezThread.Start();
     auto adapter = getAdapter();
     auto cmd = mCmd.GetCommands()[0];
     if (cmd == "devices") {
@@ -129,40 +128,31 @@ void BleApplication::execute()
     }
     else if (cmd == "dump") {
         auto device = getDevice(adapter);
-        TrustedDevice td(device);
-        auto gls = td.GetGlucoseService();
+        GlucoseServiceProfile gls(device);
         gls.ReadAllMeasurements();
         auto &recs = gls.GetMeasurements();
         std::cout << recs << std::endl;
     }
     else if (cmd == "attributes") {
         auto device = getDevice(adapter);
-        TrustedDevice td(device);
-        td.PrintServices();
+        device.PrintServices();
     }
     else if (cmd == "info") {
         auto device = getDevice(adapter);
-        TrustedDevice td(device);
 //        auto dis =td.GetDeviceInformationService();
 //        dis.PrintInfo();
     }
     Terminate(cResultSuccess);
 }
 
-void BleApplication::bluezThreadExecute()
-{
-    mBluez.run_async();
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
-}
-
-std::shared_ptr<SimpleBluez::Adapter> BleApplication::getAdapter()
+SimpleBLE::Adapter BleApplication::getAdapter()
 {
     std::string option_value;
-    auto adapters = mBluez.get_adapters();
+    auto adapters = SimpleBLE::Adapter::get_adapters();
     if (mCmd.GetOptionValue("--adapter", option_value)) {
         option_value.erase(option_value.begin()); // remove '='
-        auto f = [&](const std::shared_ptr<SimpleBluez::Adapter>& arAdapter) {
-            return ((arAdapter->address() == option_value) || (arAdapter->identifier() == option_value));
+        auto f = [&](SimpleBLE::Adapter &arAdapter) {
+            return ((arAdapter.address() == option_value) || (arAdapter.identifier() == option_value));
         };
         auto it = std::find_if(adapters.begin(), adapters.end(), f);
         if (it != adapters.end()) {
@@ -177,47 +167,63 @@ std::shared_ptr<SimpleBluez::Adapter> BleApplication::getAdapter()
     THROW_WITH_BACKTRACE(ENoAdapter);
 }
 
-void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter)
+void BleApplication::scan(SimpleBLE::Adapter &arAdapter)
 {
-    mLogger.Info() << "Scanning for Bluetooth devices...";
     bool found_device = false;
+
     SimpleBluez::Adapter::DiscoveryFilter filter;
     filter.Transport = SimpleBluez::Adapter::DiscoveryFilter::TransportType::LE;
-    arAdapter->discovery_filter(filter);
+    static_cast<SimpleBluez::Adapter*>(arAdapter.underlying())->discovery_filter(filter);
 
-    arAdapter->set_on_device_updated([&](const std::shared_ptr<SimpleBluez::Device> &arDevice) {
-        if (std::find(mPeripherals.begin(), mPeripherals.end(), arDevice) == mPeripherals.end()) {
-            mPeripherals.push_back(arDevice);
-            mLogger.Info() << "Found: " << arDevice->name() << " [" << arDevice->address() << "]";
-            if (!mDeviceMAC.empty() && (arDevice->address() == mDeviceMAC)) {
-                found_device = true;
-            }
+
+    arAdapter.set_callback_on_scan_found([&](SimpleBLE::Peripheral aPeripheral) {
+        mLogger.Info() << "Found device: " << aPeripheral.identifier()
+            << " [" << aPeripheral.address() << "] "
+            << aPeripheral.rssi() << " dBm";
+        if (!mDeviceMAC.empty() && (aPeripheral.address() == mDeviceMAC)) {
+            found_device = true;
         }
     });
+    arAdapter.set_callback_on_scan_updated([&](SimpleBLE::Peripheral aPeripheral) {
+        mLogger.Info() << "Updated device: " << aPeripheral.identifier()
+            << " [" << aPeripheral.address() << "] "
+            << aPeripheral.rssi() << " dBm";
+    });
+    arAdapter.set_callback_on_scan_start([&]() {
+        mLogger.Info() << "Scanning for Bluetooth devices...";
+    });
+    arAdapter.set_callback_on_scan_stop([&]() {
+        mLogger.Info() << "Scan stopped.";
+    });
 
-    arAdapter->discovery_start();
+    arAdapter.scan_start();
     for (int i = 0 ; i < 60 ; ++i) {
         BleServiceBase::Delay(500);
         if (found_device) {
             break;
         }
+        else {
+            mLogger.Info() << ".";
+        }
     }
-    mLogger.Info() << std::endl;
-    arAdapter->discovery_stop();
+    arAdapter.scan_stop();
+    mLogger.Info() << "Scan complete.";
+
+    mPeripherals = arAdapter.scan_get_results();
 }
 
-std::shared_ptr<SimpleBluez::Device> BleApplication::getDevice(std::shared_ptr<SimpleBluez::Adapter> &arAdapter)
+TrustedDevice BleApplication::getDevice(SimpleBLE::Adapter &arAdapter)
 {
     if (mDeviceMAC.empty()) {
         THROW_WITH_BACKTRACE(ENoDevice);
     }
     scan(arAdapter);
-    auto f = [&](const std::shared_ptr<SimpleBluez::Device>& arDevice) {
-        return (arDevice->address() == mDeviceMAC);
+    auto f = [&](SimpleBLE::Peripheral &arDevice) {
+        return (arDevice.address() == mDeviceMAC);
     };
     auto it = std::find_if(mPeripherals.begin(), mPeripherals.end(), f);
     if (it != mPeripherals.end()) {
-        return *it;
+        return TrustedDevice(*it);
     }
     THROW_WITH_BACKTRACE(EDeviceNotFound);
 }

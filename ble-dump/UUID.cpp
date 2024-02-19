@@ -9,36 +9,25 @@
 */
 #include "UUID.h"
 #include <iomanip>
-#include <map>
 #include <sstream>
 
-namespace rsp {
+namespace rsp::uuid {
 
 
-UUID::Identifiers FromString(const std::string &arUUID)
+Identifiers FromString(const std::string &arUUID)
 {
     uint32_t id = std::stoul(arUUID, nullptr, 16);
-    return static_cast<UUID::Identifiers>(id);
+    return static_cast<Identifiers>(id);
 }
 
-std::string ToString(UUID::Identifiers aIdentifier)
+std::string ToString(Identifiers aIdentifier)
 {
     std::stringstream stream;
     stream << std::setfill ('0') << std::setw(8) << std::hex << uint32_t(aIdentifier);
     return stream.str();
 }
 
-UUID::UUID(Types aType, std::string aUUID, std::string aPath, UUID* apParent)
-    : mType(aType),
-      mUUID(std::move(aUUID)),
-      mPath(std::move(aPath)),
-      mpParent(apParent)
-{
-    mId = FromString(mUUID);
-    mName = toName(mId);
-}
-
-std::string UUID::toName(UUID::Identifiers aId)
+std::string ToName(Identifiers aId)
 {
     const struct {
         Identifiers id;
@@ -72,30 +61,34 @@ std::string UUID::toName(UUID::Identifiers aId)
     return "Vendor specific";
 }
 
-UUID& UUID::GetService()
-{
-    UUID* result = this;
-    while (result->mType != Types::Service) {
-        result = result->mpParent;
-    }
-    return *result;
-}
+} // rsp::uuid
 
-std::ostream& operator<<(std::ostream &o, const UUID &arUuid)
+namespace rsp {
+std::ostream &operator<<(std::ostream &o, rsp::uuid::Identifiers aIdentifier)
 {
-    switch(arUuid.GetType()) {
-        case UUID::Types::Service:
-            o << "Service: ";
-            break;
-        case UUID::Types::Characteristic:
-            o << "  Characteristic: ";
-            break;
-        case UUID::Types::Descriptor:
-            o << "    Descriptor: ";
-            break;
-    }
-    o << arUuid.GetName() << ", " << arUuid.GetUUID() << ", " << arUuid.GetPath();
+    o << rsp::uuid::ToName(aIdentifier);
     return o;
 }
 
-} // rsp
+std::ostream &operator<<(std::ostream &o, SimpleBLE::Service &arService)
+{
+    using namespace rsp::uuid;
+    o << ToName(FromString(arService.uuid())) << ", " << arService.uuid();
+    return o;
+}
+
+std::ostream &operator<<(std::ostream &o, SimpleBLE::Characteristic &arCharacteristic)
+{
+    using namespace rsp::uuid;
+    o << ToName(FromString(arCharacteristic.uuid())) << ", " << arCharacteristic.uuid();
+    return o;
+}
+
+std::ostream &operator<<(std::ostream &o, SimpleBLE::Descriptor &arDescriptor)
+{
+    using namespace rsp::uuid;
+    o << ToName(FromString(arDescriptor.uuid())) << ", " << arDescriptor.uuid();
+    return o;
+}
+
+} // namespace rsp

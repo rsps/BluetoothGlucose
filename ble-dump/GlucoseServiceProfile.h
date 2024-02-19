@@ -10,13 +10,13 @@
 #ifndef GLUCOSE_SERVICE_PROFILE_H
 #define GLUCOSE_SERVICE_PROFILE_H
 
-#include <simpleble/SimpleBLE.h>
 #include <utils/DateTime.h>
 #include <vector>
 #include <memory>
 #include "UUID.h"
 #include "BleServiceBase.h"
 #include "AttributeStream.h"
+#include "TrustedDevice.h"
 
 namespace rsp {
 
@@ -95,7 +95,7 @@ public:
         explicit GlucoseMeasurement(AttributeStream &s);
     };
 
-    explicit GlucoseServiceProfile(std::shared_ptr<SimpleBluez::Device> apDevice, UUID &arService);
+    explicit GlucoseServiceProfile(TrustedDevice &arDevice);
     ~GlucoseServiceProfile() override;
 
     size_t GetMeasurementsCount();
@@ -105,11 +105,10 @@ public:
     [[nodiscard]] const std::vector<GlucoseMeasurement>& GetMeasurements() const { return mMeasurements; }
 
 protected:
-    std::shared_ptr<SimpleBluez::Device> mpDevice;
-    UUID &mrService;
-    std::shared_ptr<SimpleBluez::Characteristic> mRacp;
-    std::shared_ptr<SimpleBluez::Characteristic> mGlucoseMeasurement;
-    std::shared_ptr<SimpleBluez::Characteristic> mGlucoseMeasurementContext;
+    TrustedDevice mDevice;
+    std::string mRACP{};
+    std::string mGlucoseMeasurement{};
+    std::string mGlucoseMeasurementContext{};
     std::vector<GlucoseMeasurement> mMeasurements{};
     std::uint16_t mRecordCount = 0;
     bool mCommandDone = false;

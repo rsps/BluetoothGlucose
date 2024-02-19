@@ -10,88 +10,69 @@
 #include "TrustedDevice.h"
 #include "exceptions.h"
 #include "UUID.h"
-#include "BleServiceBase.h"
 #include <magic_enum.hpp>
 #include <application/Console.h>
 
 namespace rsp {
 
-TrustedDevice::TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice)
-    : mpDevice(arDevice)
+TrustedDevice::TrustedDevice(SimpleBLE::Peripheral aDevice)
+    : mDevice(std::move(aDevice))
 {
-    mLogger.Info() << "Attempting to connect with " << arDevice->address() << std::endl;
-    for (int attempt = 0; attempt < 3; attempt++) {
-        try {
-            BleServiceBase::Delay(1000);
-            arDevice->connect();
-            if (arDevice->connected()) {
-                if (arDevice->services_resolved()) {
-                    makeServiceList();
-                    return;
-                }
-            }
-        } catch (SimpleDBus::Exception::SendFailed& e) {
-            mLogger.Debug() << "Debug: " << e.what() << std::endl;
-        } catch (const std::exception &e) {
-            mLogger.Error() << "Error: " << e.what() << std::endl;
+    mLogger.Info() << "Attempting to connect with " << mDevice.address() << std::endl;
+    mDevice.connect();
+    if (mDevice.is_connected()) {
+        if (mDevice.initialized()) {
+            return;
         }
     }
-    mLogger.Error() << "Failed to connect to " << arDevice->name() << " [" << arDevice->address() << "]" << std::endl;
+    mLogger.Error() << "Failed to connect to " << " [" << mDevice.address() << "]" << std::endl;
     THROW_WITH_BACKTRACE(EDeviceNotPaired);
 }
 
 TrustedDevice::~TrustedDevice()
 {
-    mpDevice->disconnect();
+    if (mDevice.is_connected()) {
+        mDevice.disconnect();
+    }
 }
 
 void TrustedDevice::PrintServices()
 {
-    using namespace rsp::application;
-    Console::Info() << "Services on " << mpDevice->address() << ":" << std::endl;
-
-    for (auto& uuid : mServiceList) {
-        Console::Info() << uuid << std::endl;
-    }
+    auto o = application::Console::Info();
+    o << mDevice << std::endl;
 }
 
-bool TrustedDevice::HasGlucoseService()
+bool TrustedDevice::HasServiceWithId(uuid::Identifiers aId)
 try {
-    findServiceById(UUID::Identifiers::GlucoseService);
+    auto service = GetServiceById(uuid::Identifiers::GlucoseService);
     return true;
 }
 catch (const EServiceNotFound&) {
     return false;
 }
 
-GlucoseServiceProfile TrustedDevice::GetGlucoseService()
+SimpleBLE::Service TrustedDevice::GetServiceById(uuid::Identifiers aId)
 {
-    auto &service = findServiceById(UUID::Identifiers::GlucoseService);
-    return GlucoseServiceProfile(mpDevice, service);
+    for (auto &service : mDevice.services()) {
+        if (uuid::FromString(service.uuid()) == aId) {
+            return service;
+        }
+    }
+    THROW_WITH_BACKTRACE1(EServiceNotFound, std::string(magic_enum::enum_name(aId)));
 }
 
-void TrustedDevice::makeServiceList()
+std::ostream& operator<<(std::ostream &o, SimpleBLE::Peripheral &arDevice)
 {
-    for (auto &service : mpDevice->services()) {
-        auto &s = mServiceList.emplace_back(UUID::Types::Service, service->uuid(), service->path());
-        for (auto &characteristic : service->characteristics()) {
-            auto &c = mServiceList.emplace_back(UUID::Types::Characteristic, characteristic->uuid(), characteristic->path(), &s);
-            for (auto &descriptor : characteristic->descriptors()) {
-                mServiceList.emplace_back(UUID::Types::Descriptor, descriptor->uuid(), descriptor->path(), &c);
+    o << "Services on " << arDevice.identifier() << " [" << arDevice.address() << "]:" << std::endl;
+    for (auto &service : arDevice.services()) {
+        o << service << std::endl;
+        for (auto &characteristic : service.characteristics()) {
+            o << characteristic << std::endl;
+            for (auto &descriptor : characteristic.descriptors()) {
+                o << descriptor << std::endl;
             }
         }
     }
+    return o;
 }
-
-UUID& TrustedDevice::findServiceById(UUID::Identifiers aId)
-{
-    auto it = std::find_if(mServiceList.begin(), mServiceList.end(), [aId](UUID& aUuid) {
-        return (aUuid == aId);
-    });
-    if (it == mServiceList.end()) {
-        THROW_WITH_BACKTRACE1(EServiceNotFound, std::string(magic_enum::enum_name(aId)));
-    }
-    return *it;
-}
-
 } // rsp

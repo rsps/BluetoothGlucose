@@ -10,74 +10,53 @@
 #ifndef BLUETOOTHGLUCOSE_BLE_DUMP_UUID_H
 #define BLUETOOTHGLUCOSE_BLE_DUMP_UUID_H
 
-#include <ostream>
-#include <string_view>
+#include <string>
 #include <simpleble/SimpleBLE.h>
 
 namespace rsp {
 
-class UUID
+namespace uuid {
+
+// Service and Characteristic identifiers:
+enum class Identifiers : uint32_t
 {
-public:
-    // Service and Characteristic identifiers:
-    enum class Identifiers : uint32_t {
-        None = 0,
-        GenericAttributeProfileService  = 0x1801,
-        CurrentTimeService              = 0x1805,
-        GlucoseService                  = 0x1808,
-        DeviceInformationService        = 0x180a,
+    None = 0,
+    GenericAttributeProfileService = 0x1801,
+    CurrentTimeService = 0x1805,
+    GlucoseService = 0x1808,
+    DeviceInformationService = 0x180a,
 
-        ClientCharacteristicConfiguration = 0x2902,
-        GlucoseMeasurement = 0x2a18,
-        GlucoseMeasurementContext = 0x2a34,
-        GlucoseFeature = 0x2a51,
-        RecordAccessControlPoint = 0x2a52,
+    ClientCharacteristicConfiguration = 0x2902,
+    GlucoseMeasurement = 0x2a18,
+    GlucoseMeasurementContext = 0x2a34,
+    GlucoseFeature = 0x2a51,
+    RecordAccessControlPoint = 0x2a52,
 
-        SystemID = 0x2a23,
-        ModelNumberString = 0x2a24,
-        SerialNumberString = 0x2a25,
-        FirmwareRevisionString = 0x2a26,
-        SoftwareRevisionString = 0x2a28,
-        ManufacturerNameString = 0x2a29,
-        IEEE_11073_20601_RegulatoryCertDataList = 0x2a2a,
-        PnPID = 0x2a50,
+    SystemID = 0x2a23,
+    ModelNumberString = 0x2a24,
+    SerialNumberString = 0x2a25,
+    FirmwareRevisionString = 0x2a26,
+    SoftwareRevisionString = 0x2a28,
+    ManufacturerNameString = 0x2a29,
+    IEEE_11073_20601_RegulatoryCertDataList = 0x2a2a,
+    PnPID = 0x2a50,
 
-        CurrentTime = 0x2a2b
-    };
-
-    enum class Types {
-        Service,
-        Characteristic,
-        Descriptor
-    };
-
-    UUID(Types aType, std::string aUUID, std::string aPath, UUID* apParent = nullptr);
-
-    [[nodiscard]] const std::string& GetUUID() const { return mUUID; }
-    [[nodiscard]] const std::string& GetPath() const { return mPath; }
-    [[nodiscard]] const std::string& GetName() const { return mName; }
-    [[nodiscard]] Identifiers GetId() const { return mId; }
-    [[nodiscard]] Types GetType() const { return mType; }
-    [[nodiscard]] UUID& GetService();
-
-    [[nodiscard]] bool operator==(Identifiers aId) const { return mId == aId; }
-
-protected:
-    std::string mUUID;
-    std::string mName;
-    std::string mPath;
-    UUID *mpParent;
-    Identifiers mId = Identifiers::None;
-    Types mType;
-
-    static std::string toName(Identifiers aId);
+    CurrentTime = 0x2a2b
 };
 
-UUID::Identifiers FromString(const std::string &arUUID);
-std::string ToString(UUID::Identifiers aIdentifier);
+Identifiers FromString(const std::string &arUUID);
 
-std::ostream& operator<<(std::ostream &o, const UUID &arUuid);
+std::string ToString(Identifiers aIdentifier);
 
-} // rsp
+std::string ToName(Identifiers aIdentifier);
+
+} // namespace uuid
+
+std::ostream& operator<<(std::ostream &o, rsp::uuid::Identifiers aIdentifier);
+std::ostream& operator<<(std::ostream &o, SimpleBLE::Service &arService);
+std::ostream& operator<<(std::ostream &o, SimpleBLE::Characteristic &arCharacteristic);
+std::ostream& operator<<(std::ostream &o, SimpleBLE::Descriptor &arDescriptor);
+
+} // namespace rsp
 
 #endif //BLUETOOTHGLUCOSE_BLE_DUMP_UUID_H

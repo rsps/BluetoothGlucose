@@ -65,41 +65,36 @@ std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfil
     return o;
 }
 
-GlucoseServiceProfile::GlucoseServiceProfile(std::shared_ptr<SimpleBluez::Device> apDevice, UUID &arService)
-    : mpDevice(std::move(apDevice)),
-      mrService(arService)
+GlucoseServiceProfile::GlucoseServiceProfile(TrustedDevice &arDevice)
+    : BleService<GlucoseServiceProfile>(arDevice.GetServiceById(uuid::Identifiers::GlucoseService)),
+      mDevice(arDevice)
 {
-    std::string root_uuid = mrService.GetUUID().substr(8);
-    auto service = mpDevice->get_service(mrService.GetUUID());
+    std::string root_uuid = mService.uuid().substr(8);
 
-    mGlucoseMeasurement = service->get_characteristic(ToString(UUID::Identifiers::GlucoseMeasurement) + root_uuid);
-    mLogger.Debug() << "Listening on glucose measurement: " << mGlucoseMeasurement->uuid();
-    mGlucoseMeasurement->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+    mGlucoseMeasurement = ToString(uuid::Identifiers::GlucoseMeasurement) + root_uuid;
+    mLogger.Debug() << "Listening on glucose measurement: " << mGlucoseMeasurement;
+    mDevice.GetPeripheral().notify(mService.uuid(), mGlucoseMeasurement, [&](const SimpleBLE::ByteArray &arValue) {
         measurementHandler(AttributeStream(arValue));
     });
 
-    mGlucoseMeasurementContext = service->get_characteristic(ToString(UUID::Identifiers::GlucoseMeasurementContext) + root_uuid);
-    mLogger.Debug() << "Listening on glucose measurement context: " << mGlucoseMeasurementContext->uuid();
-    mGlucoseMeasurementContext->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+    mGlucoseMeasurementContext = ToString(uuid::Identifiers::GlucoseMeasurementContext) + root_uuid;
+    mLogger.Debug() << "Listening on glucose measurement context: " << mGlucoseMeasurementContext;
+    mDevice.GetPeripheral().notify(mService.uuid(), mGlucoseMeasurementContext, [&](const SimpleBLE::ByteArray &arValue) {
         measurementContextHandler(AttributeStream(arValue));
     });
 
-    mRacp = service->get_characteristic(ToString(UUID::Identifiers::RecordAccessControlPoint) + root_uuid);
-    mLogger.Debug() << "Listening on record access control point: " << mRacp->uuid();
-    mRacp->set_on_value_changed([&](const SimpleBluez::ByteArray &arValue) {
+    mRACP = ToString(uuid::Identifiers::RecordAccessControlPoint) + root_uuid;
+    mLogger.Debug() << "Listening on record access control point: " << mRACP;
+    mDevice.GetPeripheral().notify(mService.uuid(), mRACP, [&](const SimpleBLE::ByteArray &arValue) {
         racpHandler(AttributeStream(arValue));
     });
-
-    mGlucoseMeasurement->start_notify();
-    mGlucoseMeasurementContext->start_notify();
-    mRacp->start_notify();
 }
 
 GlucoseServiceProfile::~GlucoseServiceProfile()
 {
-    mRacp->stop_notify();
-    mGlucoseMeasurementContext->stop_notify();
-    mGlucoseMeasurement->stop_notify();
+    mDevice.GetPeripheral().unsubscribe(mService.uuid(), mRACP);
+    mDevice.GetPeripheral().unsubscribe(mService.uuid(), mGlucoseMeasurementContext);
+    mDevice.GetPeripheral().unsubscribe(mService.uuid(), mGlucoseMeasurement);
 }
 
 size_t GlucoseServiceProfile::GetMeasurementsCount()
@@ -129,7 +124,7 @@ void GlucoseServiceProfile::sendCommand(std::uint16_t aCommand, int aTimeoutMs)
     mCommandDone = false;
     AttributeStream command(2);
     command.Uint16(aCommand);
-    mRacp->write_command(command.GetArray());
+    mDevice.GetPeripheral().write_command(mService.uuid(), mRACP, command.GetArray());
     Delay(aTimeoutMs, &mCommandDone);
 }
 

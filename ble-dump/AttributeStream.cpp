@@ -13,7 +13,7 @@ AttributeStream::AttributeStream(size_t aSize)
 {
 }
 
-AttributeStream::AttributeStream(SimpleBluez::ByteArray aBytes)
+AttributeStream::AttributeStream(SimpleBLE::ByteArray aBytes)
         : mByteArray(std::move(aBytes)),
           mIt(mByteArray.begin())
 {

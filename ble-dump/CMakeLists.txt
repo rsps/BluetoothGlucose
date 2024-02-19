@@ -7,6 +7,7 @@ add_executable(${APP_NAME}
         TrustedDevice.cpp
         GlucoseServiceProfile.cpp
         AttributeStream.cpp
+        BleServiceBase.cpp
 )
 
 add_dependencies(${APP_NAME} rsp-core-lib)

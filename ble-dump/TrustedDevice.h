@@ -10,10 +10,8 @@
 #ifndef BLUETOOTHGLUCOSE_BLE_DUMP_TRUSTEDDEVICE_H
 #define BLUETOOTHGLUCOSE_BLE_DUMP_TRUSTEDDEVICE_H
 
-#include <simpleble/SimpleBLE.h>
 #include <vector>
 #include "UUID.h"
-#include "GlucoseServiceProfile.h"
 #include <logging/LogChannel.h>
 
 namespace rsp {
@@ -21,21 +19,22 @@ namespace rsp {
 class TrustedDevice : public rsp::logging::NamedLogger<TrustedDevice>
 {
 public:
-    explicit TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice);
+    explicit TrustedDevice(SimpleBLE::Peripheral aDevice);
     ~TrustedDevice() override;
 
     void PrintServices();
 
-    [[nodiscard]] bool HasGlucoseService();
-    GlucoseServiceProfile GetGlucoseService();
+    [[nodiscard]] bool HasServiceWithId(uuid::Identifiers aId);
+    [[nodiscard]] SimpleBLE::Service GetServiceById(uuid::Identifiers aId);
+
+    SimpleBLE::Peripheral& GetPeripheral() { return mDevice; }
 
 protected:
-    std::shared_ptr<SimpleBluez::Device> mpDevice;
-    std::vector<UUID> mServiceList{};
-
-    void makeServiceList();
-    UUID& findServiceById(UUID::Identifiers aId);
+    SimpleBLE::Peripheral mDevice;
 };
+
+std::ostream& operator<<(std::ostream &o, SimpleBLE::Peripheral &arDevice);
+
 
 } // rsp
 

@@ -14,7 +14,7 @@ class AttributeStream
 {
 public:
     explicit AttributeStream(size_t aSize);
-    AttributeStream(SimpleBluez::ByteArray aBytes); // NOLINT
+    AttributeStream(SimpleBLE::ByteArray aBytes); // NOLINT
 
     AttributeStream& Uint8(uint8_t aValue);
     AttributeStream& Uint16(uint16_t aValue);
@@ -30,11 +30,11 @@ public:
     float MedFloat32();
     rsp::utils::DateTime DateTime();
 
-    [[nodiscard]] const SimpleBluez::ByteArray& GetArray() const { return mByteArray; }
+    [[nodiscard]] const SimpleBLE::ByteArray& GetArray() const { return mByteArray; }
 
 protected:
-    SimpleBluez::ByteArray mByteArray;
-    SimpleBluez::ByteArray::iterator mIt;
+    SimpleBLE::ByteArray mByteArray;
+    SimpleBLE::ByteArray::iterator mIt;
 
     static float makeFloat(int aExponent, int aMantissa);
     static void splitFloat(float aValue, int &arExponent, int &arMantissa);
