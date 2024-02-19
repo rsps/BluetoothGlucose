@@ -18,7 +18,6 @@
 #include <utils/StrUtils.h>
 #include "BleServiceBase.h"
 
-using namespace rsp::application;
 using namespace rsp::exceptions;
 using namespace rsp::utils;
 
@@ -43,6 +42,11 @@ void BleApplication::beforeExecute()
 {
     ApplicationBase::beforeExecute();
 
+    if (!SimpleBLE::Adapter::bluetooth_enabled()) {
+        std::cout << "Bluetooth is not enabled" << std::endl;
+        return 1;
+    }
+
     if (mCmd.GetCommands().empty()) {
         showHelp();
         THROW_WITH_BACKTRACE1(ETerminate, cResultSuccess);
@@ -55,10 +59,6 @@ void BleApplication::beforeExecute()
         }
         StrUtils::ToUpper(mDeviceMAC);
     }
-
-    if (mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv")) {
-        mVerbose = true;
-    }
 }
 
 void BleApplication::afterExecute()
@@ -68,6 +68,7 @@ void BleApplication::afterExecute()
 
 void BleApplication::showHelp()
 {
+    using namespace rsp::application;
     Console::Info() << ""
        "Usage: ble-bump <options> <command>\n"
        "  Options:\n"
@@ -118,7 +119,13 @@ void BleApplication::execute()
     auto adapter = getAdapter();
     auto cmd = mCmd.GetCommands()[0];
     if (cmd == "devices") {
-        scan(adapter, true);
+        if (!(mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv"))) {
+            mLogWriter->SetAcceptLogLevel(logging::LogLevel::Info);
+        }
+        scan(adapter);
+        if (!(mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv"))) {
+            mLogWriter->SetAcceptLogLevel(logging::LogLevel::Notice);
+        }
     }
     else if (cmd == "dump") {
         auto device = getDevice(adapter);
@@ -170,11 +177,9 @@ std::shared_ptr<SimpleBluez::Adapter> BleApplication::getAdapter()
     THROW_WITH_BACKTRACE(ENoAdapter);
 }
 
-void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool aVerbose)
+void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter)
 {
-    if (aVerbose) {
-        Console::Info() << "Scanning for Bluetooth devices...";
-    }
+    mLogger.Info() << "Scanning for Bluetooth devices...";
     bool found_device = false;
     SimpleBluez::Adapter::DiscoveryFilter filter;
     filter.Transport = SimpleBluez::Adapter::DiscoveryFilter::TransportType::LE;
@@ -183,9 +188,7 @@ void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool
     arAdapter->set_on_device_updated([&](const std::shared_ptr<SimpleBluez::Device> &arDevice) {
         if (std::find(mPeripherals.begin(), mPeripherals.end(), arDevice) == mPeripherals.end()) {
             mPeripherals.push_back(arDevice);
-            if (aVerbose) {
-                Console::Info() << "\nFound: " << arDevice->name() << " [" << arDevice->address() << "]";
-            }
+            mLogger.Info() << "Found: " << arDevice->name() << " [" << arDevice->address() << "]";
             if (!mDeviceMAC.empty() && (arDevice->address() == mDeviceMAC)) {
                 found_device = true;
             }
@@ -195,16 +198,11 @@ void BleApplication::scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool
     arAdapter->discovery_start();
     for (int i = 0 ; i < 60 ; ++i) {
         BleServiceBase::Delay(500);
-        if (aVerbose && mPeripherals.empty()) {
-            Console::Info() << ".";
-        }
         if (found_device) {
             break;
         }
     }
-    if (aVerbose) {
-        Console::Info() << std::endl;
-    }
+    mLogger.Info() << std::endl;
     arAdapter->discovery_stop();
 }
 
@@ -213,7 +211,7 @@ std::shared_ptr<SimpleBluez::Device> BleApplication::getDevice(std::shared_ptr<S
     if (mDeviceMAC.empty()) {
         THROW_WITH_BACKTRACE(ENoDevice);
     }
-    scan(arAdapter, mVerbose);
+    scan(arAdapter);
     auto f = [&](const std::shared_ptr<SimpleBluez::Device>& arDevice) {
         return (arDevice->address() == mDeviceMAC);
     };

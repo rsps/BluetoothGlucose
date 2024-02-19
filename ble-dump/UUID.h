@@ -12,7 +12,7 @@
 
 #include <ostream>
 #include <string_view>
-#include "simplebluez/Bluez.h"
+#include <simpleble/SimpleBLE.h>
 
 namespace rsp {
 

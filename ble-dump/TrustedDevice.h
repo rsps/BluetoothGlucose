@@ -10,18 +10,19 @@
 #ifndef BLUETOOTHGLUCOSE_BLE_DUMP_TRUSTEDDEVICE_H
 #define BLUETOOTHGLUCOSE_BLE_DUMP_TRUSTEDDEVICE_H
 
-#include "simplebluez/Bluez.h"
+#include <simpleble/SimpleBLE.h>
 #include <vector>
 #include "UUID.h"
 #include "GlucoseServiceProfile.h"
+#include <logging/LogChannel.h>
 
 namespace rsp {
 
-class TrustedDevice
+class TrustedDevice : public rsp::logging::NamedLogger<TrustedDevice>
 {
 public:
     explicit TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice);
-    ~TrustedDevice();
+    ~TrustedDevice() override;
 
     void PrintServices();
 

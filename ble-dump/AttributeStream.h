@@ -5,7 +5,7 @@
 #ifndef ATTRIBUTE_STREAM_H
 #define ATTRIBUTE_STREAM_H
 
-#include "simplebluez/Bluez.h"
+#include <simpleble/SimpleBLE.h>
 #include <utils/DateTime.h>
 
 namespace rsp {

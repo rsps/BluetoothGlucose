@@ -18,7 +18,7 @@ target_include_directories(${APP_NAME}
 
 target_link_libraries(${APP_NAME}
         rsp-core-lib
-        simplebluez::simplebluez
+        simpleble::simpleble
 )
 
 #if (BUILD_TESTING)

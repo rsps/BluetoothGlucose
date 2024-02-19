@@ -1,6 +1,6 @@
 include(FetchContent)
 FetchContent_Declare(
-        SimpleBluez
+        SimpleBLE
         GIT_REPOSITORY git@github.com:OpenBluetoothToolbox/SimpleBLE.git
         GIT_TAG v0.7.1
         GIT_SHALLOW YES
@@ -10,11 +10,11 @@ FetchContent_Declare(
 # except to ensure that the dependency can also get what it needs, we add
 # custom logic between the FetchContent_Populate() and add_subdirectory()
 # calls.
-FetchContent_GetProperties(SimpleBluez)
-if(NOT SimpleBluez_POPULATED)
-    FetchContent_Populate(SimpleBluez)
-    list(APPEND CMAKE_MODULE_PATH "${SimpleBluez_SOURCE_DIR}/cmake/find")
-    add_subdirectory("${simplebluez_SOURCE_DIR}/simplebluez" "${SimpleBluez_BINARY_DIR}")
+FetchContent_GetProperties(SimpleBLE)
+if(NOT simpleble_POPULATED)
+    FetchContent_Populate(SimpleBLE)
+    list(APPEND CMAKE_MODULE_PATH "${simpleble_SOURCE_DIR}/cmake/find")
+    add_subdirectory("${simpleble_SOURCE_DIR}/simpleble" "${simpleble_BINARY_DIR}")
 endif()
 
-set(SimpleBluez_FOUND 1)
+set(simpleble_FOUND 1)

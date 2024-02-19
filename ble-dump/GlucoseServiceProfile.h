@@ -10,7 +10,7 @@
 #ifndef GLUCOSE_SERVICE_PROFILE_H
 #define GLUCOSE_SERVICE_PROFILE_H
 
-#include "simplebluez/Bluez.h"
+#include <simpleble/SimpleBLE.h>
 #include <utils/DateTime.h>
 #include <vector>
 #include <memory>

@@ -8,21 +8,18 @@
 * \author      steffen
 */
 #include "TrustedDevice.h"
-#include <application/Console.h>
-#include <simplebluez/Exceptions.h>
 #include "exceptions.h"
 #include "UUID.h"
 #include "BleServiceBase.h"
 #include <magic_enum.hpp>
-
-using namespace rsp::application;
+#include <application/Console.h>
 
 namespace rsp {
 
 TrustedDevice::TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice)
     : mpDevice(arDevice)
 {
-    Console::Error() << "Attempting to connect with " << arDevice->address() << std::endl;
+    mLogger.Info() << "Attempting to connect with " << arDevice->address() << std::endl;
     for (int attempt = 0; attempt < 3; attempt++) {
         try {
             BleServiceBase::Delay(1000);
@@ -34,12 +31,12 @@ TrustedDevice::TrustedDevice(std::shared_ptr<SimpleBluez::Device> &arDevice)
                 }
             }
         } catch (SimpleDBus::Exception::SendFailed& e) {
-            Console::Debug() << "Debug: " << e.what() << std::endl;
+            mLogger.Debug() << "Debug: " << e.what() << std::endl;
         } catch (const std::exception &e) {
-            Console::Error() << "Error: " << e.what() << std::endl;
+            mLogger.Error() << "Error: " << e.what() << std::endl;
         }
     }
-    Console::Error() << "Failed to connect to " << arDevice->name() << " [" << arDevice->address() << "]" << std::endl;
+    mLogger.Error() << "Failed to connect to " << arDevice->name() << " [" << arDevice->address() << "]" << std::endl;
     THROW_WITH_BACKTRACE(EDeviceNotPaired);
 }
 
@@ -50,6 +47,7 @@ TrustedDevice::~TrustedDevice()
 
 void TrustedDevice::PrintServices()
 {
+    using namespace rsp::application;
     Console::Info() << "Services on " << mpDevice->address() << ":" << std::endl;
 
     for (auto& uuid : mServiceList) {

@@ -48,7 +48,7 @@ protected:
     void bluezThreadExecute();
 
     std::shared_ptr<SimpleBluez::Adapter> getAdapter();
-    void scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter, bool aVerbose);
+    void scan(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
     std::shared_ptr<SimpleBluez::Device> getDevice(std::shared_ptr<SimpleBluez::Adapter> &arAdapter);
 };
 

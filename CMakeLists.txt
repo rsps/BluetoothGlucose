@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(FetchContent)
 find_package(Git REQUIRED)
-find_package(SimpleBluez REQUIRED)
+find_package(SimpleBLE REQUIRED)
 
 FetchContent_Declare(
         rspcorelib
