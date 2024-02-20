@@ -13,9 +13,7 @@
 #include <string>
 #include <simpleble/SimpleBLE.h>
 
-namespace rsp {
-
-namespace uuid {
+namespace rsp::uuid {
 
 // Service and Characteristic identifiers:
 enum class Identifiers : uint32_t
@@ -50,13 +48,20 @@ std::string ToString(Identifiers aIdentifier);
 
 std::string ToName(Identifiers aIdentifier);
 
-} // namespace uuid
+std::ostream &operator<<(std::ostream &o, Identifiers aIdentifier);
 
-std::ostream& operator<<(std::ostream &o, rsp::uuid::Identifiers aIdentifier);
-std::ostream& operator<<(std::ostream &o, SimpleBLE::Service &arService);
-std::ostream& operator<<(std::ostream &o, SimpleBLE::Characteristic &arCharacteristic);
-std::ostream& operator<<(std::ostream &o, SimpleBLE::Descriptor &arDescriptor);
+} // namespace rsp::uuid
 
-} // namespace rsp
+namespace SimpleBLE {
+
+std::ostream &operator<<(std::ostream &o, Peripheral &arPeripheral);
+
+std::ostream &operator<<(std::ostream &o, Service &arService);
+
+std::ostream &operator<<(std::ostream &o, Characteristic &arCharacteristic);
+
+std::ostream &operator<<(std::ostream &o, Descriptor &arDescriptor);
+
+} // namespace SimpleBLE
 
 #endif //BLUETOOTHGLUCOSE_BLE_DUMP_UUID_H

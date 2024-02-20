@@ -7,17 +7,17 @@
 * \license     Mozilla Public License 2.0
 * \author      steffen
 */
-#include <chrono>
-#include "BleApplication.h"
-#include <application/Console.h>
-#include <exceptions/SignalHandler.h>
-#include <utils/Function.h>
-#include "exceptions.h"
+
 #include "TrustedDevice.h"
+#include <application/Console.h>
+#include "BleApplication.h"
+#include <exceptions/SignalHandler.h>
+#include "exceptions.h"
 #include "GlucoseServiceProfile.h"
+#include <fstream>
+#include "Scanner.h"
+#include <utils/Function.h>
 #include <utils/StrUtils.h>
-#include "BleServiceBase.h"
-#include <simplebluez/Bluez.h>
 
 using namespace rsp::exceptions;
 using namespace rsp::utils;
@@ -115,27 +115,30 @@ void BleApplication::handleOptions()
 
 void BleApplication::execute()
 {
+    using namespace rsp::application;
     auto adapter = getAdapter();
     auto cmd = mCmd.GetCommands()[0];
     if (cmd == "devices") {
-        if (!(mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv"))) {
-            mLogWriter->SetAcceptLogLevel(logging::LogLevel::Info);
-        }
-        scan(adapter);
-        if (!(mCmd.HasOption("-v") || mCmd.HasOption("-vv") || mCmd.HasOption("-vvv"))) {
-            mLogWriter->SetAcceptLogLevel(logging::LogLevel::Notice);
-        }
+        Scanner s(adapter, mDeviceMAC);
+        s.RunFor(30000);
     }
     else if (cmd == "dump") {
         auto device = getDevice(adapter);
         GlucoseServiceProfile gls(device);
-        gls.ReadAllMeasurements();
-        auto &recs = gls.GetMeasurements();
-        std::cout << recs << std::endl;
+        Console::Info() << "Reading measurement records from " << device.GetPeripheral().address() << std::endl;
+        auto &recs = gls.ReadAllMeasurements();
+        std::string file_name = mDeviceMAC + ".csv";
+        std::replace(file_name.begin(), file_name.end(), ':', '_'); // replace all ':' to '_'
+        Console::Info() << "Writing " << recs.size() << " records to " << file_name << std::endl;
+        std::ofstream file;
+        file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        file.open(file_name, std::ios::out | std::ios::trunc);
+        file << recs << std::endl;
+        file.close();
     }
     else if (cmd == "attributes") {
         auto device = getDevice(adapter);
-        device.PrintServices();
+        mLogger.Notice() << device;
     }
     else if (cmd == "info") {
         auto device = getDevice(adapter);
@@ -167,64 +170,17 @@ SimpleBLE::Adapter BleApplication::getAdapter()
     THROW_WITH_BACKTRACE(ENoAdapter);
 }
 
-void BleApplication::scan(SimpleBLE::Adapter &arAdapter)
-{
-    bool found_device = false;
-
-    SimpleBluez::Adapter::DiscoveryFilter filter;
-    filter.Transport = SimpleBluez::Adapter::DiscoveryFilter::TransportType::LE;
-    static_cast<SimpleBluez::Adapter*>(arAdapter.underlying())->discovery_filter(filter);
-
-
-    arAdapter.set_callback_on_scan_found([&](SimpleBLE::Peripheral aPeripheral) {
-        mLogger.Info() << "Found device: " << aPeripheral.identifier()
-            << " [" << aPeripheral.address() << "] "
-            << aPeripheral.rssi() << " dBm";
-        if (!mDeviceMAC.empty() && (aPeripheral.address() == mDeviceMAC)) {
-            found_device = true;
-        }
-    });
-    arAdapter.set_callback_on_scan_updated([&](SimpleBLE::Peripheral aPeripheral) {
-        mLogger.Info() << "Updated device: " << aPeripheral.identifier()
-            << " [" << aPeripheral.address() << "] "
-            << aPeripheral.rssi() << " dBm";
-    });
-    arAdapter.set_callback_on_scan_start([&]() {
-        mLogger.Info() << "Scanning for Bluetooth devices...";
-    });
-    arAdapter.set_callback_on_scan_stop([&]() {
-        mLogger.Info() << "Scan stopped.";
-    });
-
-    arAdapter.scan_start();
-    for (int i = 0 ; i < 60 ; ++i) {
-        BleServiceBase::Delay(500);
-        if (found_device) {
-            break;
-        }
-        else {
-            mLogger.Info() << ".";
-        }
-    }
-    arAdapter.scan_stop();
-    mLogger.Info() << "Scan complete.";
-
-    mPeripherals = arAdapter.scan_get_results();
-}
-
 TrustedDevice BleApplication::getDevice(SimpleBLE::Adapter &arAdapter)
 {
     if (mDeviceMAC.empty()) {
         THROW_WITH_BACKTRACE(ENoDevice);
     }
-    scan(arAdapter);
-    auto f = [&](SimpleBLE::Peripheral &arDevice) {
-        return (arDevice.address() == mDeviceMAC);
-    };
-    auto it = std::find_if(mPeripherals.begin(), mPeripherals.end(), f);
-    if (it != mPeripherals.end()) {
-        return TrustedDevice(*it);
+
+    Scanner s(arAdapter, mDeviceMAC);
+    if (s.RunUntilFound(30000)) {
+        return TrustedDevice(s.GetResult().front());
     }
+
     THROW_WITH_BACKTRACE(EDeviceNotFound);
 }
 

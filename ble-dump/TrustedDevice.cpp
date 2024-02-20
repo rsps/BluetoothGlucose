@@ -11,12 +11,11 @@
 #include "exceptions.h"
 #include "UUID.h"
 #include <magic_enum.hpp>
-#include <application/Console.h>
 
 namespace rsp {
 
-TrustedDevice::TrustedDevice(SimpleBLE::Peripheral aDevice)
-    : mDevice(std::move(aDevice))
+TrustedDevice::TrustedDevice(const SimpleBLE::Peripheral &arDevice)
+    : mDevice(arDevice)
 {
     mLogger.Info() << "Attempting to connect with " << mDevice.address() << std::endl;
     mDevice.connect();
@@ -34,12 +33,6 @@ TrustedDevice::~TrustedDevice()
     if (mDevice.is_connected()) {
         mDevice.disconnect();
     }
-}
-
-void TrustedDevice::PrintServices()
-{
-    auto o = application::Console::Info();
-    o << mDevice << std::endl;
 }
 
 bool TrustedDevice::HasServiceWithId(uuid::Identifiers aId)
@@ -61,18 +54,10 @@ SimpleBLE::Service TrustedDevice::GetServiceById(uuid::Identifiers aId)
     THROW_WITH_BACKTRACE1(EServiceNotFound, std::string(magic_enum::enum_name(aId)));
 }
 
-std::ostream& operator<<(std::ostream &o, SimpleBLE::Peripheral &arDevice)
+std::ostream& operator<<(std::ostream &o, TrustedDevice &arDevice)
 {
-    o << "Services on " << arDevice.identifier() << " [" << arDevice.address() << "]:" << std::endl;
-    for (auto &service : arDevice.services()) {
-        o << service << std::endl;
-        for (auto &characteristic : service.characteristics()) {
-            o << characteristic << std::endl;
-            for (auto &descriptor : characteristic.descriptors()) {
-                o << descriptor << std::endl;
-            }
-        }
-    }
+    o << arDevice.GetPeripheral();
     return o;
 }
+
 } // rsp

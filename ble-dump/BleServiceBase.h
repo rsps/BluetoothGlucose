@@ -10,8 +10,6 @@
 #ifndef BLUETOOTHGLUCOSE_BLESERVICEBASE_H
 #define BLUETOOTHGLUCOSE_BLESERVICEBASE_H
 
-#include <chrono>
-#include <thread>
 #include <logging/LogChannel.h>
 #include "UUID.h"
 #include <simpleble/SimpleBLE.h>
@@ -24,16 +22,6 @@ public:
     explicit BleServiceBase(const SimpleBLE::Service &arService);
     virtual ~BleServiceBase() = default;
 
-    static void Delay(int aMilliseconds, const bool volatile *apAbort = nullptr)
-    {
-        for (int i = 0; i < aMilliseconds; i++) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            if (apAbort && *apAbort) {
-                break;
-            }
-        }
-    }
-
     [[nodiscard]] SimpleBLE::Service& GetService() { return mService; }
 
     [[nodiscard]] uuid::Identifiers GetId() const { return mId; }
@@ -44,6 +32,7 @@ protected:
     SimpleBLE::Service mService;
 
     SimpleBLE::Characteristic findCharacteristicByUuid(const std::string &arUUID);
+    static void delay(std::uint32_t aMilliseconds, const bool volatile *apAbort = nullptr);
 };
 
 template<class T>

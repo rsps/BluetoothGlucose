@@ -61,34 +61,50 @@ std::string ToName(Identifiers aId)
     return "Vendor specific";
 }
 
-} // rsp::uuid
-
-namespace rsp {
-std::ostream &operator<<(std::ostream &o, rsp::uuid::Identifiers aIdentifier)
+std::ostream &operator<<(std::ostream &o, Identifiers aIdentifier)
 {
     o << rsp::uuid::ToName(aIdentifier);
     return o;
 }
 
-std::ostream &operator<<(std::ostream &o, SimpleBLE::Service &arService)
+} // rsp::uuid
+
+namespace SimpleBLE {
+
+std::ostream& operator<<(std::ostream &o, Peripheral &arPeripheral)
 {
-    using namespace rsp::uuid;
-    o << ToName(FromString(arService.uuid())) << ", " << arService.uuid();
+    o << "Services on " << arPeripheral.identifier() << " [" << arPeripheral.address() << "]:" << std::endl;
+    for (auto &service : arPeripheral.services()) {
+        o << service << std::endl;
+        for (auto &characteristic : service.characteristics()) {
+            o << characteristic << std::endl;
+            for (auto &descriptor : characteristic.descriptors()) {
+                o << descriptor << std::endl;
+            }
+        }
+    }
     return o;
 }
 
-std::ostream &operator<<(std::ostream &o, SimpleBLE::Characteristic &arCharacteristic)
+std::ostream &operator<<(std::ostream &o, Service &arService)
 {
     using namespace rsp::uuid;
-    o << ToName(FromString(arCharacteristic.uuid())) << ", " << arCharacteristic.uuid();
+    o << "Service: " << ToName(FromString(arService.uuid())) << ", " << arService.uuid();
     return o;
 }
 
-std::ostream &operator<<(std::ostream &o, SimpleBLE::Descriptor &arDescriptor)
+std::ostream &operator<<(std::ostream &o, Characteristic &arCharacteristic)
 {
     using namespace rsp::uuid;
-    o << ToName(FromString(arDescriptor.uuid())) << ", " << arDescriptor.uuid();
+    o << "  Characteristic: " << ToName(FromString(arCharacteristic.uuid())) << ", " << arCharacteristic.uuid();
     return o;
 }
 
-} // namespace rsp
+std::ostream &operator<<(std::ostream &o, Descriptor &arDescriptor)
+{
+    using namespace rsp::uuid;
+    o << "    Descriptor: " << ToName(FromString(arDescriptor.uuid())) << ", " << arDescriptor.uuid();
+    return o;
+}
+
+} // namespace SimpleBLE

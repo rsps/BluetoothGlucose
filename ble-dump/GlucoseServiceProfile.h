@@ -99,7 +99,7 @@ public:
     ~GlucoseServiceProfile() override;
 
     size_t GetMeasurementsCount();
-    GlucoseServiceProfile& ReadAllMeasurements();
+    const std::vector<GlucoseMeasurement>& ReadAllMeasurements();
     GlucoseServiceProfile& ClearAllMeasurements();
 
     [[nodiscard]] const std::vector<GlucoseMeasurement>& GetMeasurements() const { return mMeasurements; }

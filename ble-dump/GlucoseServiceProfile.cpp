@@ -105,11 +105,11 @@ size_t GlucoseServiceProfile::GetMeasurementsCount()
     return mRecordCount;
 }
 
-GlucoseServiceProfile& GlucoseServiceProfile::ReadAllMeasurements()
+const std::vector<GlucoseServiceProfile::GlucoseMeasurement>& GlucoseServiceProfile::ReadAllMeasurements()
 {
     mLogger.Info() << "Requesting all records";
     sendCommand(0x0101, 20000);
-    return *this;
+    return mMeasurements;
 }
 
 GlucoseServiceProfile& GlucoseServiceProfile::ClearAllMeasurements()
@@ -125,7 +125,7 @@ void GlucoseServiceProfile::sendCommand(std::uint16_t aCommand, int aTimeoutMs)
     AttributeStream command(2);
     command.Uint16(aCommand);
     mDevice.GetPeripheral().write_command(mService.uuid(), mRACP, command.GetArray());
-    Delay(aTimeoutMs, &mCommandDone);
+    delay(aTimeoutMs, &mCommandDone);
 }
 
 void GlucoseServiceProfile::racpHandler(AttributeStream aStream)

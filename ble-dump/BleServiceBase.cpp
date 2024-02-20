@@ -8,6 +8,8 @@
 * \author      steffen
 */
 
+#include <chrono>
+#include <thread>
 #include "BleServiceBase.h"
 #include "exceptions.h"
 
@@ -28,5 +30,14 @@ SimpleBLE::Characteristic BleServiceBase::findCharacteristicByUuid(const std::st
     THROW_WITH_BACKTRACE1(ECharacteristicNotFound, uuid::ToName(uuid::FromString(arUUID)));
 }
 
-} // namespace rsp
+void BleServiceBase::delay(std::uint32_t aMilliseconds, volatile const bool *apAbort)
+{
+    for (int i = 0; i < aMilliseconds; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (apAbort && *apAbort) {
+            break;
+        }
+    }
+}
 
+} // namespace rsp

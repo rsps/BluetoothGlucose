@@ -8,6 +8,7 @@ add_executable(${APP_NAME}
         GlucoseServiceProfile.cpp
         AttributeStream.cpp
         BleServiceBase.cpp
+        Scanner.cpp
 )
 
 add_dependencies(${APP_NAME} rsp-core-lib)
