@@ -15,8 +15,9 @@
 
 namespace rsp {
 
-BleServiceBase::BleServiceBase(const SimpleBLE::Service &arService)
-    : mService(arService)
+BleServiceBase::BleServiceBase(const TrustedDevice &arDevice, uuid::Identifiers aServiceUuid)
+    : mDevice(arDevice),
+      mService(mDevice.GetServiceById(aServiceUuid))
 {
 }
 

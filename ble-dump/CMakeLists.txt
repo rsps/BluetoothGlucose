@@ -9,6 +9,8 @@ add_executable(${APP_NAME}
         AttributeStream.cpp
         BleServiceBase.cpp
         Scanner.cpp
+        DeviceInformationServiceProfile.cpp
+        CurrentTimeServiceProfile.cpp
 )
 
 add_dependencies(${APP_NAME} rsp-core-lib)

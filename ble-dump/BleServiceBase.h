@@ -13,13 +13,14 @@
 #include <logging/LogChannel.h>
 #include "UUID.h"
 #include <simpleble/SimpleBLE.h>
+#include "TrustedDevice.h"
 
 namespace rsp {
 
 class BleServiceBase
 {
 public:
-    explicit BleServiceBase(const SimpleBLE::Service &arService);
+    explicit BleServiceBase(const TrustedDevice &arDevice, uuid::Identifiers aServiceUuid);
     virtual ~BleServiceBase() = default;
 
     [[nodiscard]] SimpleBLE::Service& GetService() { return mService; }
@@ -29,6 +30,7 @@ public:
 
 protected:
     uuid::Identifiers mId = uuid::Identifiers::None;
+    TrustedDevice mDevice;
     SimpleBLE::Service mService;
 
     SimpleBLE::Characteristic findCharacteristicByUuid(const std::string &arUUID);
@@ -39,7 +41,7 @@ template<class T>
 class BleService : public BleServiceBase, public rsp::logging::NamedLogger<T>
 {
 public:
-    explicit BleService(const SimpleBLE::Service &arService) : BleServiceBase(arService) {}
+    explicit BleService(const TrustedDevice &arDevice, uuid::Identifiers aServiceUuid) : BleServiceBase(arDevice, aServiceUuid) {}
 };
 
 

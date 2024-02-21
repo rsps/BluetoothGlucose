@@ -65,9 +65,8 @@ std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfil
     return o;
 }
 
-GlucoseServiceProfile::GlucoseServiceProfile(TrustedDevice &arDevice)
-    : BleService<GlucoseServiceProfile>(arDevice.GetServiceById(uuid::Identifiers::GlucoseService)),
-      mDevice(arDevice)
+GlucoseServiceProfile::GlucoseServiceProfile(const TrustedDevice &arDevice)
+    : BleService<GlucoseServiceProfile>(arDevice, uuid::Identifiers::GlucoseService)
 {
     std::string root_uuid = mService.uuid().substr(8);
 

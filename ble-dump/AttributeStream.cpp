@@ -137,8 +137,9 @@ void AttributeStream::splitFloat(float aValue, int &arExponent, int &arMantissa)
     // TODO: std::frexp() std::ldexp()
 }
 
-AttributeStream &AttributeStream::DateTime(const utils::DateTime &arDt)
+AttributeStream &AttributeStream::DateTime(const utils::DateTime &arDt, bool aIncludeDayOfWeek, bool aIncludeFractions)
 {
+    using namespace std::chrono;
     std::tm tm = arDt;
     Uint16(tm.tm_year);
     Uint8(tm.tm_mon);
@@ -146,10 +147,18 @@ AttributeStream &AttributeStream::DateTime(const utils::DateTime &arDt)
     Uint8(tm.tm_hour);
     Uint8(tm.tm_min);
     Uint8(tm.tm_sec);
+    if (aIncludeDayOfWeek) {
+        Uint8((tm.tm_wday == 0) ? 7 : tm.tm_wday); // tm_wday starts on sunday, ISO 8601 goes 1-7 from Monday
+    }
+    if (aIncludeFractions) {
+        time_point<system_clock, milliseconds> msd = time_point_cast<milliseconds>(system_clock::time_point(arDt));
+        long msecs = msd.time_since_epoch().count() % 1000;
+        Uint8((msecs * 256) / 1000);
+    }
     return *this;
 }
 
-rsp::utils::DateTime AttributeStream::DateTime()
+rsp::utils::DateTime AttributeStream::DateTime(bool aIncludeDayOfWeek, bool aIncludeFractions)
 {
     auto y = Uint16();
     auto m = Uint8();
@@ -157,7 +166,38 @@ rsp::utils::DateTime AttributeStream::DateTime()
     auto h = Uint8();
     auto i = Uint8();
     auto s = Uint8();
-    return {y, m,d, h, i, s};
+    if (aIncludeDayOfWeek) {
+        Uint8(); // Discard day of week
+    }
+    int msec = 0;
+    if (aIncludeFractions) {
+        auto f = long(Uint8());
+        msec = int((f * 1000) / 256);
+    }
+    return {y, m,d, h, i, s, msec};
+}
+
+AttributeStream &AttributeStream::String(const std::string &arString)
+{
+    mByteArray = arString;
+    return *this;
+}
+
+std::string AttributeStream::String()
+{
+    return mByteArray;
+}
+
+AttributeStream& AttributeStream::Uint64(uint64_t aValue)
+{
+    Uint32(uint32_t(aValue & 0x00000000FFFFFFFF));
+    Uint32(uint32_t(aValue >> 32));
+    return *this;
+}
+
+uint64_t AttributeStream::Uint64()
+{
+    return uint64_t(Uint32()) + (uint64_t(Uint32()) << 32);
 }
 
 std::ostream& operator<<(std::ostream &o, const AttributeStream &arBA)

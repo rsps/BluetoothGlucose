@@ -11,6 +11,8 @@
 #include "TrustedDevice.h"
 #include <application/Console.h>
 #include "BleApplication.h"
+#include "CurrentTimeServiceProfile.h"
+#include "DeviceInformationServiceProfile.h"
 #include <exceptions/SignalHandler.h>
 #include "exceptions.h"
 #include "GlucoseServiceProfile.h"
@@ -85,6 +87,8 @@ void BleApplication::showHelp()
        "    dump                            Dump records from the device in CSV format\n"
        "    attributes                      List attributes for the device\n"
        "    info                            Show general device information\n"
+       "    time                            Show the current time in the device\n"
+       "    sync-time                       Synchronize the device time with this host\n"
        << std::endl;
 
     auto adapters = SimpleBLE::Adapter::get_adapters();
@@ -127,6 +131,12 @@ void BleApplication::execute()
     }
     else if (cmd == "info") {
         infoCommand();
+    }
+    else if (cmd == "time") {
+        timeCommand();
+    }
+    else if (cmd == "sync-time") {
+        syncTimeCommand();
     }
     else {
         showHelp();
@@ -206,8 +216,25 @@ void BleApplication::infoCommand()
 {
     auto adapter = getAdapter();
     auto device = getDevice(adapter);
-//        auto dis =td.GetDeviceInformationService();
-//        dis.PrintInfo();
+    DeviceInformationServiceProfile dis(device);
+    mLogger.Notice() << dis;
+}
+
+void BleApplication::timeCommand()
+{
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+    CurrentTimeServiceProfile cts(device);
+    mLogger.Notice() << cts;
+}
+
+void BleApplication::syncTimeCommand()
+{
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+    CurrentTimeServiceProfile cts(device);
+    cts.SetTime(DateTime::Now());
+    mLogger.Notice() << cts;
 }
 
 } // rsp

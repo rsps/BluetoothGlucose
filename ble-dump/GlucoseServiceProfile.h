@@ -16,7 +16,6 @@
 #include "UUID.h"
 #include "BleServiceBase.h"
 #include "AttributeStream.h"
-#include "TrustedDevice.h"
 
 namespace rsp {
 
@@ -95,7 +94,7 @@ public:
         explicit GlucoseMeasurement(AttributeStream &s);
     };
 
-    explicit GlucoseServiceProfile(TrustedDevice &arDevice);
+    explicit GlucoseServiceProfile(const TrustedDevice &arDevice);
     ~GlucoseServiceProfile() override;
 
     size_t GetMeasurementsCount();
@@ -105,7 +104,6 @@ public:
     [[nodiscard]] const std::vector<GlucoseMeasurement>& GetMeasurements() const { return mMeasurements; }
 
 protected:
-    TrustedDevice mDevice;
     std::string mRACP{};
     std::string mGlucoseMeasurement{};
     std::string mGlucoseMeasurementContext{};

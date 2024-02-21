@@ -50,6 +50,8 @@ protected:
     void dumpCommand();
     void attributesCommand();
     void infoCommand();
+    void timeCommand();
+    void syncTimeCommand();
 };
 
 } // rsp

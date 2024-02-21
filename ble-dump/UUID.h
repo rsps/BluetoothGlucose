@@ -43,11 +43,8 @@ enum class Identifiers : uint32_t
 };
 
 Identifiers FromString(const std::string &arUUID);
-
 std::string ToString(Identifiers aIdentifier);
-
 std::string ToName(Identifiers aIdentifier);
-
 std::ostream &operator<<(std::ostream &o, Identifiers aIdentifier);
 
 } // namespace rsp::uuid
@@ -55,11 +52,8 @@ std::ostream &operator<<(std::ostream &o, Identifiers aIdentifier);
 namespace SimpleBLE {
 
 std::ostream &operator<<(std::ostream &o, Peripheral &arPeripheral);
-
 std::ostream &operator<<(std::ostream &o, Service &arService);
-
 std::ostream &operator<<(std::ostream &o, Characteristic &arCharacteristic);
-
 std::ostream &operator<<(std::ostream &o, Descriptor &arDescriptor);
 
 } // namespace SimpleBLE
