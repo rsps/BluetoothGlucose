@@ -12,11 +12,16 @@
 #include "CurrentTimeServiceProfile.h"
 #include <magic_enum.hpp>
 
+template <>
+struct magic_enum::customize::enum_range<rsp::CurrentTimeServiceProfile::AdjustReason> {
+    static constexpr bool is_flags = true;
+};
+
 namespace rsp {
 
 std::ostream& operator<<(std::ostream &o, CurrentTimeServiceProfile &arService)
 {
-    o << "Current Time: " << arService.GetTime() << ", " << magic_enum::enum_name(arService.GetReason());
+    o << "Current Time: " << arService.GetTime() << ", " << magic_enum::enum_flags_name(arService.GetReason());
     return o;
 }
 

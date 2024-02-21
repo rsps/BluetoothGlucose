@@ -22,12 +22,6 @@ namespace rsp {
 class GlucoseServiceProfile : public BleService<GlucoseServiceProfile>
 {
 public:
-    enum Flags {
-        TimeOffsetPresent           = 0x01,
-        GlucoseConcentrationPresent = 0x02,
-        GlucoseInMMol               = 0x04,
-        SensorStatusPresent         = 0x08
-    };
     enum class Units {
         mg_dL,
         mmol_L
@@ -76,6 +70,12 @@ public:
     };
 
     struct GlucoseMeasurement {
+        enum Flags {
+            TimeOffsetPresent           = 0x01,
+            GlucoseConcentrationPresent = 0x02,
+            GlucoseInMMol               = 0x04,
+            SensorStatusPresent         = 0x08
+        };
         uint16_t mSequenceNo = 0;
         rsp::utils::DateTime mCaptureTime{};
         Units mUnit = Units::mg_dL;
@@ -93,6 +93,87 @@ public:
          */
         explicit GlucoseMeasurement(AttributeStream &s);
     };
+
+    enum class CarbohydrateIDs {
+        NotAvailable,
+        Breakfast,
+        Lunch,
+        Dinner,
+        Snack,
+        Drink,
+        Supper,
+        Brunch,
+        Reserved
+    };
+    enum class Meals {
+        NotAvailable,
+        BeforeMeal,
+        AfterMeal,
+        Fasting,
+        Casual,
+        Bedtime,
+        Reserved
+    };
+    enum class Testers {
+        Reserved,
+        Self,
+        HealthCareProfessional,
+        LabTest,
+        Reserved1,
+        NotAvailable = 0xF
+    };
+    enum class Healths {
+        Reserved,
+        MinorHealthIssues,
+        MajorHealthIssues,
+        DuringMenses,
+        UnderStress,
+        NoHealthIssues,
+        Reserved1,
+        NotAvailable = 0xF
+    };
+    enum class MedicationIDs {
+        NotAvailable,
+        RapidActingInsulin,
+        ShortActingInsulin,
+        IntermediateActingInsulin,
+        LongActingInsulin,
+        PreMixedInsulin,
+        Reserved
+    };
+    enum class MedicationUnits {
+        MassKilogram,
+        VolumeLitre
+    };
+
+    struct GlucoseMeasurementContext {
+        enum Flags {
+            CarbohydratesPresent           = 0x01,
+            MealPresent                    = 0x02,
+            TesterHealthPresent            = 0x04,
+            ExercisePresent                = 0x08,
+            MedicationPresent              = 0x10,
+            MedicationUnitsOfMilligrams    = 0x20,
+            HbA1cPresent                   = 0x40,
+            ExtendedPresent                = 0x80
+        };
+        uint16_t mSequenceNo = 0;
+        CarbohydrateIDs mCarbohydrateID = CarbohydrateIDs::NotAvailable;
+        float mCarbohydrate = 0.0f; // Always in mass.kilogram
+        Meals mMeal = Meals::NotAvailable;
+        Testers mTester = Testers::NotAvailable;
+        Healths mHealth = Healths::NotAvailable;
+        uint16_t mExerciseDurationSeconds = 0;
+        uint8_t mExerciseIntensity = 0;
+        MedicationIDs mMedicationID = MedicationIDs::NotAvailable;
+        float mMedication = 0.0f;
+        MedicationUnits mMedicationUnit = MedicationUnits::MassKilogram;
+        float mHbA1c = 0.0f;
+
+        GlucoseMeasurementContext() = default;
+        explicit GlucoseMeasurementContext(AttributeStream &s);
+    };
+
 
     explicit GlucoseServiceProfile(const TrustedDevice &arDevice);
     ~GlucoseServiceProfile() override;

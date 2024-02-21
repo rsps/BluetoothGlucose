@@ -20,11 +20,12 @@ class CurrentTimeServiceProfile : public BleService<CurrentTimeServiceProfile>
 {
 public:
     enum class AdjustReason {
-        ManualTimeUpdate,
-        ExternalReferenceTimeUpdate,
-        ChangeOfTimeZone,
-        ChangeOfDST,
-        Reserved
+        None,
+        ManualTimeUpdate = 1,
+        ExternalReferenceTimeUpdate = 2,
+        ChangeOfTimeZone = 4,
+        ChangeOfDST = 8,
+        Reserved = 16
     };
 
     explicit CurrentTimeServiceProfile(const TrustedDevice &arDevice);
@@ -36,7 +37,7 @@ public:
 
 protected:
     std::string mRootUuid{};
-    AdjustReason mAdjustReason = AdjustReason::Reserved;
+    AdjustReason mAdjustReason = AdjustReason::None;
 };
 std::ostream& operator<<(std::ostream &o, CurrentTimeServiceProfile &arService);
 

@@ -43,6 +43,43 @@ GlucoseServiceProfile::GlucoseMeasurement::GlucoseMeasurement(AttributeStream &s
     }
 }
 
+GlucoseServiceProfile::GlucoseMeasurementContext::GlucoseMeasurementContext(AttributeStream &s)
+{
+    if (s.GetArray().size() < 10) {
+        THROW_WITH_BACKTRACE(EGlucoseArgument);
+    }
+
+    uint8_t flags = s.Uint8();
+    mMedicationUnit = (flags & Flags::MedicationUnitsOfMilligrams) ? MedicationUnits::MassKilogram : MedicationUnits::VolumeLitre;
+    mSequenceNo = s.Uint16();
+    if (flags & Flags::ExtendedPresent) {
+        s.Uint8(); // All reserved. Simply discard.
+    }
+    if (flags & Flags::CarbohydratesPresent) {
+        mCarbohydrateID = CarbohydrateIDs(s.Uint8());
+        mCarbohydrate = s.MedFloat16();
+    }
+    if (flags & Flags::MealPresent) {
+        mMeal = Meals(s.Uint8());
+    }
+    if (flags & Flags::TesterHealthPresent) {
+        mTester = Testers(s.Uint8() & 0x0F);
+        mHealth = Healths((s.Uint8() >> 4) & 0x0F);
+    }
+    if (flags & Flags::ExercisePresent) {
+        mExerciseDurationSeconds = s.Uint16();
+        mExerciseIntensity = s.Uint8();
+    }
+    if (flags & Flags::MedicationPresent) {
+        mMedicationID = MedicationIDs(s.Uint8());
+        mMedication = s.MedFloat16();
+    }
+    if (flags & Flags::HbA1cPresent) {
+        mHbA1c = s.MedFloat16();
+    }
+}
+
+
 std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM)
 {
     o   << arGM.mSequenceNo << ", "
