@@ -44,8 +44,12 @@ protected:
     void execute() override;
 
     SimpleBLE::Adapter getAdapter();
-    void scan(SimpleBLE::Adapter &arAdapter);
     TrustedDevice getDevice(SimpleBLE::Adapter &arAdapter);
+
+    void devicesCommand();
+    void dumpCommand();
+    void attributesCommand();
+    void infoCommand();
 };
 
 } // rsp

@@ -115,35 +115,21 @@ void BleApplication::handleOptions()
 
 void BleApplication::execute()
 {
-    using namespace rsp::application;
-    auto adapter = getAdapter();
     auto cmd = mCmd.GetCommands()[0];
     if (cmd == "devices") {
-        Scanner s(adapter, mDeviceMAC);
-        s.RunFor(30000);
+        devicesCommand();
     }
     else if (cmd == "dump") {
-        auto device = getDevice(adapter);
-        GlucoseServiceProfile gls(device);
-        Console::Info() << "Reading measurement records from " << device.GetPeripheral().address() << std::endl;
-        auto &recs = gls.ReadAllMeasurements();
-        std::string file_name = mDeviceMAC + ".csv";
-        std::replace(file_name.begin(), file_name.end(), ':', '_'); // replace all ':' to '_'
-        Console::Info() << "Writing " << recs.size() << " records to " << file_name << std::endl;
-        std::ofstream file;
-        file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        file.open(file_name, std::ios::out | std::ios::trunc);
-        file << recs << std::endl;
-        file.close();
+        dumpCommand();
     }
     else if (cmd == "attributes") {
-        auto device = getDevice(adapter);
-        mLogger.Notice() << device;
+        attributesCommand();
     }
     else if (cmd == "info") {
-        auto device = getDevice(adapter);
-//        auto dis =td.GetDeviceInformationService();
-//        dis.PrintInfo();
+        infoCommand();
+    }
+    else {
+        showHelp();
     }
     Terminate(cResultSuccess);
 }
@@ -182,6 +168,46 @@ TrustedDevice BleApplication::getDevice(SimpleBLE::Adapter &arAdapter)
     }
 
     THROW_WITH_BACKTRACE(EDeviceNotFound);
+}
+
+void BleApplication::devicesCommand()
+{
+    auto adapter = getAdapter();
+    Scanner s(adapter, mDeviceMAC);
+    s.RunFor(30000);
+}
+
+void BleApplication::dumpCommand()
+{
+    using namespace rsp::application;
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+    GlucoseServiceProfile gls(device);
+    Console::Info() << "Reading measurement records from " << device.GetPeripheral().address() << std::endl;
+    auto &recs = gls.ReadAllMeasurements();
+    std::string file_name = mDeviceMAC + ".csv";
+    std::replace(file_name.begin(), file_name.end(), ':', '_'); // replace all ':' to '_'
+    Console::Info() << "Writing " << recs.size() << " records to " << file_name << std::endl;
+    std::ofstream file;
+    file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+    file.open(file_name, std::ios::out | std::ios::trunc);
+    file << recs << std::endl;
+    file.close();
+}
+
+void BleApplication::attributesCommand()
+{
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+    mLogger.Notice() << device;
+}
+
+void BleApplication::infoCommand()
+{
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+//        auto dis =td.GetDeviceInformationService();
+//        dis.PrintInfo();
 }
 
 } // rsp
