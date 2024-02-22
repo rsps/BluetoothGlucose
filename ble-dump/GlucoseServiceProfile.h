@@ -22,78 +22,6 @@ namespace rsp {
 class GlucoseServiceProfile : public BleService<GlucoseServiceProfile>
 {
 public:
-    enum class Units {
-        mg_dL,
-        mmol_L
-    };
-    enum class Type {
-        Reserved,
-        CapillaryWholeBlood,
-        CapillaryPlasma,
-        VenousWholeBlood,
-        VenousPlasma,
-        ArterialWholeBlood,
-        ArterialPlasma,
-        UndeterminedWholeBlood,
-        UndeterminedPlasma,
-        InterstitialFluid,
-        ControlSolution,
-        ReservedForFutureUse1 = 0x0B,
-        ReservedForFutureUse2 = 0x0C,
-        ReservedForFutureUse3 = 0x0D,
-        ReservedForFutureUse4 = 0x0E,
-        ReservedForFutureUse5 = 0x0F
-    };
-    enum class Location {
-        Reserved,
-        Finger,
-        AlternateSiteTest,
-        Earlobe,
-        ControlSolution,
-        NotAvailable = 0xF
-    };
-    enum SensorStatus {
-        None = 0,
-        BatteryLow              = 0x0001,
-        SensorMalfunction       = 0x0002,
-        SampleSizeInsufficient  = 0x0004,
-        StripInsertionError     = 0x0008,
-        StripTypeIncorrect      = 0x0010,
-        SensorResultToHigh      = 0x0020,
-        SensorResultToLow       = 0x0040,
-        SensorTemperatureToHigh = 0x0080,
-        SensorTemperatureToLow  = 0x0100,
-        SensorReadInterrupted   = 0x0200,
-        GeneralDeviceFault      = 0x0400,
-        TimeFault               = 0x0800,
-        Reserved                = 0xF000
-    };
-
-    struct GlucoseMeasurement {
-        enum Flags {
-            TimeOffsetPresent           = 0x01,
-            GlucoseConcentrationPresent = 0x02,
-            GlucoseInMMol               = 0x04,
-            SensorStatusPresent         = 0x08
-        };
-        uint16_t mSequenceNo = 0;
-        rsp::utils::DateTime mCaptureTime{};
-        Units mUnit = Units::mg_dL;
-        float mGlucoseConcentration = 0.0;
-        Type mType = Type::Reserved;
-        Location mLocation = Location::Reserved;
-        SensorStatus mSensorStatus = SensorStatus::None;
-        bool mHasContext = false;
-
-        GlucoseMeasurement() = default;
-        /**
-         * \brief Constructor that takes binary GlucoseMeasurement data
-         * \param arValue Byte array with data
-         * \Reference Section 3.107 in GATT Specification Supplement (https://www.bluetooth.com/specifications/specs/gatt-specification-supplement-5/)
-         */
-        explicit GlucoseMeasurement(AttributeStream &s);
-    };
-
     enum class CarbohydrateIDs {
         NotAvailable,
         Breakfast,
@@ -157,7 +85,6 @@ public:
             HbA1cPresent                   = 0x40,
             ExtendedPresent                = 0x80
         };
-        uint16_t mSequenceNo = 0;
         CarbohydrateIDs mCarbohydrateID = CarbohydrateIDs::NotAvailable;
         float mCarbohydrate = 0.0f; // Always in mass.kilogram
         Meals mMeal = Meals::NotAvailable;
@@ -171,9 +98,81 @@ public:
         float mHbA1c = 0.0f;
 
         GlucoseMeasurementContext() = default;
-        explicit GlucoseMeasurementContext(AttributeStream &s);
+        void Populate(uint8_t flags, AttributeStream &s);
     };
 
+
+    enum class GlucoseUnits {
+        mg_dL,
+        mmol_L
+    };
+    enum class Type {
+        Reserved,
+        CapillaryWholeBlood,
+        CapillaryPlasma,
+        VenousWholeBlood,
+        VenousPlasma,
+        ArterialWholeBlood,
+        ArterialPlasma,
+        UndeterminedWholeBlood,
+        UndeterminedPlasma,
+        InterstitialFluid,
+        ControlSolution,
+        ReservedForFutureUse1 = 0x0B,
+        ReservedForFutureUse2 = 0x0C,
+        ReservedForFutureUse3 = 0x0D,
+        ReservedForFutureUse4 = 0x0E,
+        ReservedForFutureUse5 = 0x0F
+    };
+    enum class Location {
+        Reserved,
+        Finger,
+        AlternateSiteTest,
+        Earlobe,
+        ControlSolution,
+        NotAvailable = 0xF
+    };
+    enum SensorStatus {
+        None = 0,
+        BatteryLow              = 0x0001,
+        SensorMalfunction       = 0x0002,
+        SampleSizeInsufficient  = 0x0004,
+        StripInsertionError     = 0x0008,
+        StripTypeIncorrect      = 0x0010,
+        SensorResultToHigh      = 0x0020,
+        SensorResultToLow       = 0x0040,
+        SensorTemperatureToHigh = 0x0080,
+        SensorTemperatureToLow  = 0x0100,
+        SensorReadInterrupted   = 0x0200,
+        GeneralDeviceFault      = 0x0400,
+        TimeFault               = 0x0800,
+        Reserved                = 0xF000
+    };
+
+    struct GlucoseMeasurement {
+        enum Flags {
+            TimeOffsetPresent           = 0x01,
+            GlucoseConcentrationPresent = 0x02,
+            GlucoseInMMol               = 0x04,
+            SensorStatusPresent         = 0x08
+        };
+        uint16_t mSequenceNo = 0;
+        rsp::utils::DateTime mCaptureTime{};
+        GlucoseUnits mUnit = GlucoseUnits::mg_dL;
+        float mGlucoseConcentration = 0.0;
+        Type mType = Type::Reserved;
+        Location mLocation = Location::Reserved;
+        SensorStatus mSensorStatus = SensorStatus::None;
+        GlucoseMeasurementContext mContext{};
+
+        GlucoseMeasurement() = default;
+        /**
+         * \brief Constructor that takes binary GlucoseMeasurement data
+         * \param arValue Byte array with data
+         * \Reference Section 3.107 in GATT Specification Supplement (https://www.bluetooth.com/specifications/specs/gatt-specification-supplement-5/)
+         */
+        explicit GlucoseMeasurement(AttributeStream &s);
+    };
 
     explicit GlucoseServiceProfile(const TrustedDevice &arDevice);
     ~GlucoseServiceProfile() override;
@@ -199,6 +198,7 @@ protected:
 };
 
 std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM);
+std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurementContext &arGMC);
 std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList);
 
 } // namespace rsp

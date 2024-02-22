@@ -8,7 +8,7 @@
 * \author      steffen
 */
 
-#include <cmath>
+#include <cctype>
 #include "GlucoseServiceProfile.h"
 #include "exceptions.h"
 #include "AttributeStream.h"
@@ -18,6 +18,24 @@ using namespace rsp::utils;
 
 namespace rsp {
 
+static std::string tr(std::string_view aString)
+{
+    if (aString == "NotAvailable") {
+        return "N/A";
+    }
+    std::string result;
+    result.reserve(aString.size() + 5);
+    bool first = true;
+    for (char chr : aString) {
+        if (std::isupper(chr) && !first) {
+            result += " ";
+        }
+        result += chr;
+        first = false;
+    }
+    return result;
+}
+
 GlucoseServiceProfile::GlucoseMeasurement::GlucoseMeasurement(AttributeStream &s)
 {
     if (s.GetArray().size() < 10) {
@@ -25,7 +43,7 @@ GlucoseServiceProfile::GlucoseMeasurement::GlucoseMeasurement(AttributeStream &s
     }
 
     uint8_t flags = s.Uint8();
-    mUnit = (flags & Flags::GlucoseInMMol) ? Units::mmol_L : Units::mg_dL;
+    mUnit = (flags & Flags::GlucoseInMMol) ? GlucoseUnits::mmol_L : GlucoseUnits::mg_dL;
     mSequenceNo = s.Uint16();
     mCaptureTime = s.DateTime();
     if (flags & Flags::TimeOffsetPresent) {
@@ -43,15 +61,13 @@ GlucoseServiceProfile::GlucoseMeasurement::GlucoseMeasurement(AttributeStream &s
     }
 }
 
-GlucoseServiceProfile::GlucoseMeasurementContext::GlucoseMeasurementContext(AttributeStream &s)
+void GlucoseServiceProfile::GlucoseMeasurementContext::Populate(uint8_t flags, AttributeStream &s)
 {
-    if (s.GetArray().size() < 10) {
+    if (s.GetArray().size() < 3) {
         THROW_WITH_BACKTRACE(EGlucoseArgument);
     }
 
-    uint8_t flags = s.Uint8();
     mMedicationUnit = (flags & Flags::MedicationUnitsOfMilligrams) ? MedicationUnits::MassKilogram : MedicationUnits::VolumeLitre;
-    mSequenceNo = s.Uint16();
     if (flags & Flags::ExtendedPresent) {
         s.Uint8(); // All reserved. Simply discard.
     }
@@ -82,20 +98,36 @@ GlucoseServiceProfile::GlucoseMeasurementContext::GlucoseMeasurementContext(Attr
 
 std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM)
 {
-    o   << arGM.mSequenceNo << ", "
-        << arGM.mCaptureTime.ToRFC3339() << ", "
-        << arGM.mGlucoseConcentration << ", "
-        << ((arGM.mUnit == GlucoseServiceProfile::Units::mg_dL) ? "mg/dl" : "mmol/L") << ", "
-        << magic_enum::enum_name(arGM.mType) << ", "
-        << magic_enum::enum_name(arGM.mLocation) << ", "
-        << "0x" << std::setfill('0') << std::setw(2) << std::hex << uint32_t(arGM.mSensorStatus) << std::dec << ", "
-        << int(arGM.mHasContext);
+    o << arGM.mSequenceNo << ","
+      << arGM.mCaptureTime.ToISO8601UTC() << ","
+      << arGM.mGlucoseConcentration << ","
+      << ((arGM.mUnit == GlucoseServiceProfile::GlucoseUnits::mg_dL) ? "mg/dl" : "mmol/L") << ","
+        << tr(magic_enum::enum_name(arGM.mType)) << ","
+        << tr(magic_enum::enum_name(arGM.mLocation)) << ","
+        << "0x" << std::setfill('0') << std::setw(2) << std::hex << uint32_t(arGM.mSensorStatus) << std::dec << ","
+        << arGM.mContext;
+    return o;
+}
+
+std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurementContext &arGMC)
+{
+    o   << tr(magic_enum::enum_name(arGMC.mCarbohydrateID)) << ","
+        << arGMC.mCarbohydrate << ","
+        << tr(magic_enum::enum_name(arGMC.mMeal)) << ","
+        << tr(magic_enum::enum_name(arGMC.mTester)) << ","
+        << tr(magic_enum::enum_name(arGMC.mHealth)) << ","
+        << arGMC.mExerciseDurationSeconds << ","
+        << int(arGMC.mExerciseIntensity) << "%,"
+        << tr(magic_enum::enum_name(arGMC.mMedicationID)) << ","
+        << arGMC.mMedication << ","
+        << ((arGMC.mMedicationUnit == GlucoseServiceProfile::MedicationUnits::MassKilogram) ? "mg" : "ml") << ","
+        << arGMC.mHbA1c;
     return o;
 }
 
 std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList)
 {
-    o << "SequenceNo, CaptureTime, GlucoseConcentration, Unit, Type, Location, SensorStatus, Context\r\n";
+    o << "Sequence No,Capture Time,Glucose Concentration,Unit,Type,Location,Sensor Status,Carbohydrate ID,Carbohydrate,Meal,Tester,Health,Exercise Duration,Exercise Intensity,Medication ID,Medication,Medication Unit,HbA1c\r\n";
     for (auto &row : arList) {
         o << row << "\r\n";
     }
@@ -202,11 +234,11 @@ void GlucoseServiceProfile::measurementHandler(AttributeStream aStream)
 void GlucoseServiceProfile::measurementContextHandler(AttributeStream aStream)
 {
     mLogger.Info() << "Context: " << aStream;
-    /*auto flags =*/ aStream.Uint8();
+    auto flags = aStream.Uint8();
     auto seq_no = aStream.Uint16();
     for (auto &mes : mMeasurements) {
         if (mes.mSequenceNo == seq_no) {
-            mes.mHasContext = true;
+            mes.mContext.Populate(flags, aStream);
             break;
         }
     }
