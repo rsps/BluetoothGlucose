@@ -20,6 +20,7 @@
 #include <Scanner.h>
 #include <utils/Function.h>
 #include <utils/StrUtils.h>
+#include <version.h>
 
 using namespace rsp::exceptions;
 using namespace rsp::utils;
@@ -54,9 +55,8 @@ void BleApplication::beforeExecute()
     if (mCmd.GetOptionValue("--device", mDeviceMAC)) {
         std::string_view removals("= ");
         while (removals.find(mDeviceMAC[0]) != std::string_view::npos) {
-            mDeviceMAC.erase(mDeviceMAC.begin()); // remove first character
+            mDeviceMAC.erase(mDeviceMAC.begin()); // remove first character: '='
         }
-        StrUtils::ToUpper(mDeviceMAC);
     }
 }
 
@@ -73,6 +73,7 @@ void BleApplication::showHelp()
        "  Options:\n"
        "    --adapter=<adapter name>        Name of the BlueTooth adapter to use. Defaults to first.\n"
        "    --device=<device address>       Address of BlueTooth device to connect to.\n"
+       "    --filename=<filename|auto>      Name of file to store device records into. Defaults to auto.\n"
        "    -h                              Same as --help.\n"
        "    --help                          Show this help information.\n"
        "    --log=<filename|syslog>         Log output to file.\n"
@@ -83,12 +84,13 @@ void BleApplication::showHelp()
        "    -vv                             Increase verbosity level to Debug.\n"
        "\n"
        "Commands:\n"
+       "    attributes                      List attributes for the device\n"
+       "    clear                           Clear all records on the device\n"
        "    devices                         List found BlueTooth devices\n"
        "    dump                            Dump records from the device in CSV format\n"
-       "    attributes                      List attributes for the device\n"
        "    info                            Show general device information\n"
-       "    time                            Show the current time in the device\n"
        "    sync-time                       Synchronize the device time with this host\n"
+       "    time                            Show the current time in the device\n"
        << std::endl;
 
     auto adapters = SimpleBLE::Adapter::get_adapters();
@@ -106,10 +108,10 @@ void BleApplication::showHelp()
 
 void BleApplication::showVersion()
 {
-    using namespace rsp::application;
-    Console::Info() << "Version 0.0.1";
-    ApplicationBase::showVersion();
-    Console::Info() << "SimpleBLE version: " << SimpleBLE::get_simpleble_version();;
+    rsp::application::Console::Info()
+        << GetAppName() << " v0.1.0\n"
+        << "RSP Core Library v" << get_library_version() << "\n"
+        << "SimpleBLE v" << SimpleBLE::get_simpleble_version() << std::endl;
 }
 
 void BleApplication::handleOptions()
@@ -125,6 +127,9 @@ void BleApplication::execute()
     }
     else if (cmd == "dump") {
         dumpCommand();
+    }
+    else if (cmd == "clear") {
+        clearCommand();
     }
     else if (cmd == "attributes") {
         attributesCommand();
@@ -189,20 +194,29 @@ void BleApplication::devicesCommand()
 
 void BleApplication::dumpCommand()
 {
-    using namespace rsp::application;
     auto adapter = getAdapter();
     auto device = getDevice(adapter);
     GlucoseServiceProfile gls(device);
-    Console::Info() << "Reading measurement records from " << device.GetPeripheral().address() << std::endl;
+    mLogger.Notice() << "Reading measurement records from " << device.GetPeripheral().identifier() << " [" << device.GetPeripheral().address() << "]";
     auto &recs = gls.ReadAllMeasurements();
-    std::string file_name = mDeviceMAC + ".csv";
-    std::replace(file_name.begin(), file_name.end(), ':', '_'); // replace all ':' to '_'
-    Console::Info() << "Writing " << recs.size() << " records to " << file_name << std::endl;
+    std::string file_name = getFileName(device);
+    mLogger.Notice() << "Writing " << recs.size() << " records to " << file_name;
     std::ofstream file;
     file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     file.open(file_name, std::ios::out | std::ios::trunc);
     file << recs << std::endl;
     file.close();
+}
+
+void BleApplication::clearCommand()
+{
+    using namespace rsp::application;
+    auto adapter = getAdapter();
+    auto device = getDevice(adapter);
+    GlucoseServiceProfile gls(device);
+    auto count = gls.GetMeasurementsCount();
+    mLogger.Warning() << "Deleting " << count << " measurement records from " << device.GetPeripheral().address();
+    gls.ClearAllMeasurements();
 }
 
 void BleApplication::attributesCommand()
@@ -235,6 +249,21 @@ void BleApplication::syncTimeCommand()
     CurrentTimeServiceProfile cts(device);
     cts.SetTime(DateTime::Now());
     mLogger.Notice() << cts;
+}
+
+std::string BleApplication::getFileName(TrustedDevice &arDevice)
+{
+    std::string filename = "auto";
+    if (mCmd.GetOptionValue("--filename", filename)) {
+        std::string_view removals("= ");
+        while (removals.find(filename) != std::string_view::npos) {
+            filename.erase(filename.begin()); // remove first character: '='
+        }
+    }
+    if(filename == "auto") {
+        filename = arDevice.GetPeripheral().identifier() + "-" + DateTime().ToString("%Y%m%d%H%M%S") + ".csv";
+    }
+    return filename;
 }
 
 } // rsp

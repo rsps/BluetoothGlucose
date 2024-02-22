@@ -38,7 +38,7 @@ protected:
     bool mFoundDevice = false;
 
     void execute(std::uint32_t aMilliseconds, bool aStopWhenFound);
-    [[nodiscard]] bool addressAccepted(const std::string &arAddress) const;
+    [[nodiscard]] bool addressAccepted(SimpleBLE::Peripheral &arPeripheral) const;
 };
 
 } // rsp

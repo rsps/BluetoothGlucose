@@ -14,6 +14,7 @@
 #ifdef __linux__
 #include <simplebluez/Bluez.h>
 #endif
+#include <utils/StrUtils.h>
 
 namespace rsp {
 
@@ -55,7 +56,7 @@ void Scanner::execute(std::uint32_t aMilliseconds, bool aStopWhenFound)
 #endif
 
     mAdapter.set_callback_on_scan_found([this](SimpleBLE::Peripheral aPeripheral) {
-        if (!addressAccepted(aPeripheral.address())) {
+        if (!addressAccepted(aPeripheral)) {
             return;
         }
         mLogger.Notice() << "Found device: " << aPeripheral.identifier()
@@ -89,13 +90,19 @@ void Scanner::execute(std::uint32_t aMilliseconds, bool aStopWhenFound)
     mAdapter.scan_stop();
 }
 
-bool Scanner::addressAccepted(const std::string &arAddress) const
+bool Scanner::addressAccepted(SimpleBLE::Peripheral &arPeripheral) const
 {
     if (mAcceptFilter.empty()) {
         return true;
     }
-    return (std::find_if(mAcceptFilter.begin(), mAcceptFilter.end(), [&](const std::string &arAddr) {
-        return arAddr == arAddress;
+    return (std::find_if(mAcceptFilter.begin(), mAcceptFilter.end(), [&](const std::string &arFilter) {
+        if (arPeripheral.identifier() == "Contour7802-1441482") {
+            std::cout << "Filter " << arFilter.substr(0, arFilter.size()-1) << std::endl;
+        }
+        if (arFilter.back() == '*') {
+            return utils::StrUtils::StartsWith(arPeripheral.identifier(), arFilter.substr(0, arFilter.size()-1));
+        }
+        return arFilter == arPeripheral.address();
     }) != mAcceptFilter.end());
 }
 

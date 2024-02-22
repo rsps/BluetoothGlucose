@@ -45,9 +45,11 @@ protected:
 
     SimpleBLE::Adapter getAdapter();
     TrustedDevice getDevice(SimpleBLE::Adapter &arAdapter);
+    std::string getFileName(TrustedDevice &arDevice);
 
     void devicesCommand();
     void dumpCommand();
+    void clearCommand();
     void attributesCommand();
     void infoCommand();
     void timeCommand();
