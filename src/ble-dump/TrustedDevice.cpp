@@ -7,9 +7,9 @@
 * \license     Mozilla Public License 2.0
 * \author      steffen
 */
-#include "TrustedDevice.h"
-#include "exceptions.h"
-#include "UUID.h"
+#include <TrustedDevice.h>
+#include <exceptions.h>
+#include <UUID.h>
 #include <magic_enum.hpp>
 
 namespace rsp {

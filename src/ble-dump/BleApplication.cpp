@@ -8,16 +8,16 @@
 * \author      steffen
 */
 
-#include "TrustedDevice.h"
+#include <TrustedDevice.h>
 #include <application/Console.h>
-#include "BleApplication.h"
-#include "CurrentTimeServiceProfile.h"
-#include "DeviceInformationServiceProfile.h"
+#include <BleApplication.h>
+#include <CurrentTimeServiceProfile.h>
+#include <DeviceInformationServiceProfile.h>
 #include <exceptions/SignalHandler.h>
-#include "exceptions.h"
-#include "GlucoseServiceProfile.h"
+#include <exceptions.h>
+#include <GlucoseServiceProfile.h>
 #include <fstream>
-#include "Scanner.h"
+#include <Scanner.h>
 #include <utils/Function.h>
 #include <utils/StrUtils.h>
 

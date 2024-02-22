@@ -22,9 +22,8 @@ MESSAGE("SimpleBluez: ${simplebluez_inc}")
 
 include_directories(
         ${CMAKE_BINARY_DIR}/include/
-        ${PROJECT_SOURCE_DIR}/common
         ${rspcorelib_SOURCE_DIR}/include
         ${simplebluez_inc}
 )
 
-add_subdirectory(ble-dump)
+add_subdirectory(src/ble-dump)

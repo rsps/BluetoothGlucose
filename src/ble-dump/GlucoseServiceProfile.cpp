@@ -9,9 +9,9 @@
 */
 
 #include <cctype>
-#include "GlucoseServiceProfile.h"
-#include "exceptions.h"
-#include "AttributeStream.h"
+#include <GlucoseServiceProfile.h>
+#include <exceptions.h>
+#include <AttributeStream.h>
 #include <magic_enum.hpp>
 
 using namespace rsp::utils;

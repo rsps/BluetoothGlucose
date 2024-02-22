@@ -17,7 +17,7 @@ add_dependencies(${APP_NAME} rsp-core-lib)
 
 target_include_directories(${APP_NAME}
         PUBLIC
-        ${PROJECT_SOURCE_DIR}/ble-dump
+        ${PROJECT_SOURCE_DIR}/include/${APP_NAME}
 )
 
 target_link_libraries(${APP_NAME}

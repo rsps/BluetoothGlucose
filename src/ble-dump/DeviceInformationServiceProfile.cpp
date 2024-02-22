@@ -8,7 +8,7 @@
 * \author      steffen
 */
 
-#include "DeviceInformationServiceProfile.h"
+#include <DeviceInformationServiceProfile.h>
 #include <iomanip>
 #include <magic_enum.hpp>
 

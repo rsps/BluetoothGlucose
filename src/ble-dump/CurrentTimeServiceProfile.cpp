@@ -8,8 +8,8 @@
 * \author      steffen
 */
 
-#include "AttributeStream.h"
-#include "CurrentTimeServiceProfile.h"
+#include <AttributeStream.h>
+#include <CurrentTimeServiceProfile.h>
 #include <magic_enum.hpp>
 
 template <>

@@ -10,7 +10,7 @@
 
 #include <chrono>
 #include <thread>
-#include "Scanner.h"
+#include <Scanner.h>
 #ifdef __linux__
 #include <simplebluez/Bluez.h>
 #endif
