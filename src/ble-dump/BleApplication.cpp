@@ -18,6 +18,7 @@
 #include <GlucoseServiceProfile.h>
 #include <fstream>
 #include <Scanner.h>
+#include <utils/CsvEncoder.h>
 #include <utils/Function.h>
 #include <utils/StrUtils.h>
 #include <version.h>
@@ -199,12 +200,28 @@ void BleApplication::dumpCommand()
     GlucoseServiceProfile gls(device);
     mLogger.Notice() << "Reading measurement records from " << device.GetPeripheral().identifier() << " [" << device.GetPeripheral().address() << "]";
     auto &recs = gls.ReadAllMeasurements();
+    DynamicData dd;
+    dd << recs;
+    CsvEncoder csv(true, ';');
     std::string file_name = getFileName(device);
     mLogger.Notice() << "Writing " << recs.size() << " records to " << file_name;
     std::ofstream file;
     file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     file.open(file_name, std::ios::out | std::ios::trunc);
-    file << recs << std::endl;
+
+    csv.SetValueFormatter([](std::string &arResult, const DynamicData &arValue) -> bool {
+        if (arValue.AsString() == "HbA1c") {
+            arResult = arValue.AsString();
+            return true;
+        }
+        else if (arValue.GetType() == Variant::Types::Float) {
+            arResult = StrUtils::ToString(arValue.AsFloat(), 1, true);
+            return true;
+        }
+        arResult = arValue.AsString();
+        return false;
+    }).Encode(file, dd);
+
     file.close();
 }
 

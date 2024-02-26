@@ -13,6 +13,7 @@
 #include <utils/DateTime.h>
 #include <vector>
 #include <memory>
+#include <utils/DynamicData.h>
 #include "UUID.h"
 #include "BleServiceBase.h"
 #include "AttributeStream.h"
@@ -74,7 +75,7 @@ public:
         VolumeLitre
     };
 
-    struct GlucoseMeasurementContext {
+struct GlucoseMeasurementContext {
         enum Flags {
             CarbohydratesPresent           = 0x01,
             MealPresent                    = 0x02,
@@ -197,9 +198,9 @@ protected:
     void measurementContextHandler(AttributeStream aStream);
 };
 
-std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM);
-std::ostream& operator<<(std::ostream &o, const GlucoseServiceProfile::GlucoseMeasurementContext &arGMC);
-std::ostream& operator<<(std::ostream &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList);
+utils::DynamicData& operator<<(utils::DynamicData &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM);
+utils::DynamicData& operator<<(utils::DynamicData &o, const GlucoseServiceProfile::GlucoseMeasurementContext &arGMC);
+utils::DynamicData& operator<<(utils::DynamicData &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList);
 
 } // namespace rsp
 
