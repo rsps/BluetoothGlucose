@@ -96,9 +96,6 @@ bool Scanner::addressAccepted(SimpleBLE::Peripheral &arPeripheral) const
         return true;
     }
     return (std::find_if(mAcceptFilter.begin(), mAcceptFilter.end(), [&](const std::string &arFilter) {
-        if (arPeripheral.identifier() == "Contour7802-1441482") {
-            std::cout << "Filter " << arFilter.substr(0, arFilter.size()-1) << std::endl;
-        }
         if (arFilter.back() == '*') {
             return utils::StrUtils::StartsWith(arPeripheral.identifier(), arFilter.substr(0, arFilter.size()-1));
         }

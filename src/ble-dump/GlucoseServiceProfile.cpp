@@ -105,13 +105,13 @@ void GlucoseServiceProfile::GlucoseMeasurementContext::Populate(uint8_t flags, A
 utils::DynamicData& operator<<(utils::DynamicData &o, const GlucoseServiceProfile::GlucoseMeasurement &arGM)
 {
     o
-        .Add(arGM.mSequenceNo)
-        .Add(arGM.mCaptureTime.ToISO8601UTC())
-        .Add(arGM.mGlucoseConcentration)
-        .Add(((arGM.mUnit == GlucoseServiceProfile::GlucoseUnits::mg_dL) ? "mg/dl" : "mmol/L"))
-        .Add(std::string(magic_enum::enum_name(arGM.mType)))
-        .Add(std::string(magic_enum::enum_name(arGM.mLocation)))
-        .Add(magic_enum::enum_flags_name(arGM.mSensorStatus));
+        .Add("SequenceNo", arGM.mSequenceNo)
+        .Add("CaptureTime", arGM.mCaptureTime.ToISO8601UTC())
+        .Add("GlucoseConcentration", arGM.mGlucoseConcentration)
+        .Add("Unit", ((arGM.mUnit == GlucoseServiceProfile::GlucoseUnits::mg_dL) ? "mg/dl" : "mmol/L"))
+        .Add("Type", std::string(magic_enum::enum_name(arGM.mType)))
+        .Add("Location", std::string(magic_enum::enum_name(arGM.mLocation)))
+        .Add("SensorStatus", magic_enum::enum_flags_name(arGM.mSensorStatus));
     o << arGM.mContext;
     return o;
 }
@@ -119,50 +119,26 @@ utils::DynamicData& operator<<(utils::DynamicData &o, const GlucoseServiceProfil
 utils::DynamicData& operator<<(utils::DynamicData &o, const GlucoseServiceProfile::GlucoseMeasurementContext &arGMC)
 {
     o
-        .Add(std::string(magic_enum::enum_name(arGMC.mCarbohydrateID)))
-        .Add(arGMC.mCarbohydrate)
-        .Add(std::string(magic_enum::enum_name(arGMC.mMeal)))
-        .Add(std::string(magic_enum::enum_name(arGMC.mTester)))
-        .Add(std::string(magic_enum::enum_name(arGMC.mHealth)))
-        .Add(arGMC.mExerciseDurationSeconds)
-        .Add(int(arGMC.mExerciseIntensity))
-        .Add(std::string(magic_enum::enum_name(arGMC.mMedicationID)))
-        .Add(arGMC.mMedication)
-        .Add(((arGMC.mMedicationUnit == GlucoseServiceProfile::MedicationUnits::MassKilogram) ? "mg" : "ml"))
-        .Add(arGMC.mHbA1c);
+        .Add("Carbohydrate ID", std::string(magic_enum::enum_name(arGMC.mCarbohydrateID)))
+        .Add("Carbohydrate", arGMC.mCarbohydrate)
+        .Add("Meal", std::string(magic_enum::enum_name(arGMC.mMeal)))
+        .Add("Tester", std::string(magic_enum::enum_name(arGMC.mTester)))
+        .Add("Health", std::string(magic_enum::enum_name(arGMC.mHealth)))
+        .Add("Exercise Duration", arGMC.mExerciseDurationSeconds)
+        .Add("Exercise Intensity", int(arGMC.mExerciseIntensity))
+        .Add("Medication ID", std::string(magic_enum::enum_name(arGMC.mMedicationID)))
+        .Add("Medication", arGMC.mMedication)
+        .Add("Medication Unit", ((arGMC.mMedicationUnit == GlucoseServiceProfile::MedicationUnits::MassKilogram) ? "mg" : "ml"))
+        .Add("HbA1c", arGMC.mHbA1c);
     return o;
 }
 
 utils::DynamicData& operator<<(utils::DynamicData &o, const std::vector<GlucoseServiceProfile::GlucoseMeasurement> &arList)
 {
-    o
-        .Add("Headers", DynamicData())
-        .Add("Data", DynamicData());
-
-    o["Headers"]
-        .Add("Sequence No")
-        .Add("Capture Time")
-        .Add("Glucose Concentration")
-        .Add("Unit")
-        .Add("Type")
-        .Add("Location")
-        .Add("Sensor Status")
-        .Add("Carbohydrate ID")
-        .Add("Carbohydrate")
-        .Add("Meal")
-        .Add("Tester")
-        .Add("Health")
-        .Add("Exercise Duration")
-        .Add("Exercise Intensity")
-        .Add("Medication ID")
-        .Add("Medication")
-        .Add("Medication Unit")
-        .Add("HbA1c");
-
     for (auto &row : arList) {
         DynamicData dd_row;
         dd_row << row;
-        o["Data"].Add(dd_row);
+        o.Add(dd_row);
     }
     return o;
 }

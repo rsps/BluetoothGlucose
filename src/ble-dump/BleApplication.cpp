@@ -17,6 +17,7 @@
 #include <exceptions.h>
 #include <GlucoseServiceProfile.h>
 #include <fstream>
+#include <json/JsonEncoder.h>
 #include <Scanner.h>
 #include <utils/CsvEncoder.h>
 #include <utils/Function.h>
@@ -53,12 +54,7 @@ void BleApplication::beforeExecute()
         THROW_WITH_BACKTRACE1(ETerminate, cResultSuccess);
     }
 
-    if (mCmd.GetOptionValue("--device", mDeviceMAC)) {
-        std::string_view removals("= ");
-        while (removals.find(mDeviceMAC[0]) != std::string_view::npos) {
-            mDeviceMAC.erase(mDeviceMAC.begin()); // remove first character: '='
-        }
-    }
+    mCmd.GetOptionValue("--device=", mDeviceMAC);
 }
 
 void BleApplication::afterExecute()
@@ -75,6 +71,7 @@ void BleApplication::showHelp()
        "    --adapter=<adapter name>        Name of the BlueTooth adapter to use. Defaults to first.\n"
        "    --device=<device address>       Address of BlueTooth device to connect to.\n"
        "    --filename=<filename|auto>      Name of file to store device records into. Defaults to auto.\n"
+       "    --encoder=<csv|json>            Output encoder type.\n"
        "    -h                              Same as --help.\n"
        "    --help                          Show this help information.\n"
        "    --log=<filename|syslog>         Log output to file.\n"
@@ -154,8 +151,7 @@ SimpleBLE::Adapter BleApplication::getAdapter()
 {
     std::string option_value;
     auto adapters = SimpleBLE::Adapter::get_adapters();
-    if (mCmd.GetOptionValue("--adapter", option_value)) {
-        option_value.erase(option_value.begin()); // remove '='
+    if (mCmd.GetOptionValue("--adapter=", option_value)) {
         auto f = [&](SimpleBLE::Adapter &arAdapter) {
             return ((arAdapter.address() == option_value) || (arAdapter.identifier() == option_value));
         };
@@ -202,26 +198,18 @@ void BleApplication::dumpCommand()
     auto &recs = gls.ReadAllMeasurements();
     DynamicData dd;
     dd << recs;
-    CsvEncoder csv(true, ';');
+
     std::string file_name = getFileName(device);
     mLogger.Notice() << "Writing " << recs.size() << " records to " << file_name;
     std::ofstream file;
     file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     file.open(file_name, std::ios::out | std::ios::trunc);
-
-    csv.SetValueFormatter([](std::string &arResult, const DynamicData &arValue) -> bool {
-        if (arValue.AsString() == "HbA1c") {
-            arResult = arValue.AsString();
-            return true;
-        }
-        else if (arValue.GetType() == Variant::Types::Float) {
-            arResult = StrUtils::ToString(arValue.AsFloat(), 1, true);
-            return true;
-        }
-        arResult = arValue.AsString();
-        return false;
-    }).Encode(file, dd);
-
+    if (mEncoder == "csv") {
+        saveToCsv(file, dd);
+    }
+    else {
+        saveToJson(file, dd);
+    }
     file.close();
 }
 
@@ -271,16 +259,37 @@ void BleApplication::syncTimeCommand()
 std::string BleApplication::getFileName(TrustedDevice &arDevice)
 {
     std::string filename = "auto";
-    if (mCmd.GetOptionValue("--filename", filename)) {
-        std::string_view removals("= ");
-        while (removals.find(filename) != std::string_view::npos) {
-            filename.erase(filename.begin()); // remove first character: '='
-        }
-    }
+    mCmd.GetOptionValue("--filename=", filename);
+    mEncoder = "csv";
+    mCmd.GetOptionValue("--encoder=", mEncoder);
+
     if(filename == "auto") {
-        filename = arDevice.GetPeripheral().identifier() + "-" + DateTime().ToString("%Y%m%d%H%M%S") + ".csv";
+        filename = arDevice.GetPeripheral().identifier() + "-" + DateTime().ToString("%Y%m%d%H%M%S") + "." + mEncoder;
     }
     return filename;
+}
+
+void BleApplication::saveToCsv(std::ostream &o, const DynamicData &arData)
+{
+    CsvEncoder csv(true, ';');
+    csv.SetValueFormatter([](std::string &arResult, const DynamicData &arValue) -> bool {
+        if (arValue.AsString() == "HbA1c") {
+            arResult = arValue.AsString();
+            return true;
+        }
+        else if (arValue.GetType() == Variant::Types::Float) {
+            arResult = StrUtils::ToString(arValue.AsFloat(), 1, true);
+            return true;
+        }
+        arResult = arValue.AsString();
+        return false;
+    }).Encode(o, arData);
+}
+
+void BleApplication::saveToJson(std::ostream &o, const DynamicData &arData)
+{
+    json::JsonEncoder json(true);
+    o << json.Encode(arData);
 }
 
 } // rsp

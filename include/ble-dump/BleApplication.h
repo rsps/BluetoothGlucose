@@ -35,6 +35,7 @@ protected:
     std::vector<SimpleBLE::Peripheral> mPeripherals;
     std::string mDeviceMAC{};
     bool mVerbose = false;
+    std::string mEncoder{};
 
     void beforeExecute() override;
     void afterExecute() override;
@@ -46,6 +47,8 @@ protected:
     SimpleBLE::Adapter getAdapter();
     TrustedDevice getDevice(SimpleBLE::Adapter &arAdapter);
     std::string getFileName(TrustedDevice &arDevice);
+    static void saveToCsv(std::ostream &o, const utils::DynamicData &arData);
+    static void saveToJson(std::ostream &o, const utils::DynamicData &arData);
 
     void devicesCommand();
     void dumpCommand();
