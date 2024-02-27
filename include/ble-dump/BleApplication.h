@@ -34,7 +34,6 @@ public:
 protected:
     std::vector<SimpleBLE::Peripheral> mPeripherals;
     std::string mDeviceMAC{};
-    bool mVerbose = false;
     std::string mEncoder{};
 
     void beforeExecute() override;
