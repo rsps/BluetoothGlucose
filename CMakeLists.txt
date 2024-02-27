@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.28)
 project(BluetoothGlucose)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,6 +15,7 @@ FetchContent_Declare(
         rspcorelib
         GIT_REPOSITORY "git@github.com:rsps/rsp-core-library.git"
         GIT_TAG "origin/gfx_acc"
+        EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(rspcorelib)
 

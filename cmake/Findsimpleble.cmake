@@ -14,7 +14,7 @@ FetchContent_GetProperties(simpleble)
 if(NOT simpleble_POPULATED)
     FetchContent_Populate(simpleble)
     list(APPEND CMAKE_MODULE_PATH "${simpleble_SOURCE_DIR}/cmake/find")
-    add_subdirectory("${simpleble_SOURCE_DIR}/simpleble" "${simpleble_BINARY_DIR}")
+    add_subdirectory("${simpleble_SOURCE_DIR}/simpleble" "${simpleble_BINARY_DIR}" EXCLUDE_FROM_ALL)
 endif()
 
 find_package(DBus1 REQUIRED)
