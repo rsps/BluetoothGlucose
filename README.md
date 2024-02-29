@@ -14,7 +14,7 @@ The software also uses components from the [RSP Core Library](https://github.com
 Essential build tools like cmake and gcc are also needed.
 
 ## ble-dump
-Small CLI application to connect and dump all records from a BGM supporting the Bluetooth Glucose Service profile.
+CLI application to connect and dump all records from a BGM supporting the Bluetooth Glucose Service profile.
 
 ble-bump can list host adapter information, scan for devices, connect to an individual device and dump service profiles.
 It can connect via either Bluetooth MAC address or device name, even partial names to connect to the first matching

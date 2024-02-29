@@ -76,7 +76,7 @@ public:
     };
 
 struct GlucoseMeasurementContext {
-        enum Flags {
+        enum Flags : uint8_t {
             CarbohydratesPresent           = 0x01,
             MealPresent                    = 0x02,
             TesterHealthPresent            = 0x04,
@@ -86,6 +86,7 @@ struct GlucoseMeasurementContext {
             HbA1cPresent                   = 0x40,
             ExtendedPresent                = 0x80
         };
+        Flags mFlags = Flags(0);
         CarbohydrateIDs mCarbohydrateID = CarbohydrateIDs::NotAvailable;
         float mCarbohydrate = 0.0f; // Always in mass.kilogram
         Meals mMeal = Meals::NotAvailable;
@@ -99,7 +100,7 @@ struct GlucoseMeasurementContext {
         float mHbA1c = 0.0f;
 
         GlucoseMeasurementContext() = default;
-        void Populate(uint8_t flags, AttributeStream &s);
+        void Populate(Flags flags, AttributeStream &s);
     };
 
 
@@ -151,12 +152,13 @@ struct GlucoseMeasurementContext {
     };
 
     struct GlucoseMeasurement {
-        enum Flags {
+        enum Flags : uint8_t {
             TimeOffsetPresent           = 0x01,
             GlucoseConcentrationPresent = 0x02,
             GlucoseInMMol               = 0x04,
             SensorStatusPresent         = 0x08
         };
+        Flags mFlags = Flags(0);
         uint16_t mSequenceNo = 0;
         rsp::utils::DateTime mCaptureTime{};
         GlucoseUnits mUnit = GlucoseUnits::mg_dL;

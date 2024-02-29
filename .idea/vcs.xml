@@ -2,6 +2,12 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/doctest-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/fmt-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/lighttpd_src-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/magic_enum-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/rspcorelib-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build-release/_deps/simpleble-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/doctest-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/fmt-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/build/_deps/lighttpd_src-src" vcs="Git" />

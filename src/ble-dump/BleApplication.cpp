@@ -23,6 +23,7 @@
 #include <utils/Function.h>
 #include <utils/StrUtils.h>
 #include <version.h>
+#include <version-def.h>
 
 using namespace rsp::exceptions;
 using namespace rsp::utils;
@@ -107,7 +108,7 @@ void BleApplication::showHelp()
 void BleApplication::showVersion()
 {
     rsp::application::Console::Info()
-        << GetAppName() << " v0.1.0\n"
+        << GetAppName() << " v" << getAppVersion() << "\n"
         << "RSP Core Library v" << get_library_version() << "\n"
         << "SimpleBLE v" << SimpleBLE::get_simpleble_version() << std::endl;
 }
@@ -279,6 +280,10 @@ void BleApplication::saveToCsv(std::ostream &o, const DynamicData &arData)
         }
         else if (arValue.GetType() == Variant::Types::Float) {
             arResult = StrUtils::ToString(arValue.AsFloat(), 1, true);
+            return true;
+        }
+        else if (arValue.IsNull()) {
+            arResult = "";
             return true;
         }
         arResult = arValue.AsString();
